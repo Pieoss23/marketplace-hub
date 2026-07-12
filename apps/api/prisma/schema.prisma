@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Central listing, mirroring the pure domain type `Listing` in
+/// @marketplace-hub/domain. Price is stored in minor currency units to
+/// avoid floating point rounding issues.
+model Listing {
+  id                        String                     @id @default(uuid())
+  title                     String
+  description               String
+  priceAmountMinor          Int
+  priceCurrency             String
+  images                    ListingImage[]
+  marketplaceConfigurations MarketplaceConfiguration[]
+  publications              Publication[]
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+}
+
+model ListingImage {
+  id        String  @id @default(uuid())
+  url       String
+  position  Int
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId String
+
+  @@unique([listingId, position])
+}
+
+model MarketplaceConfiguration {
+  id            String   @id @default(uuid())
+  listing       Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId     String
+  marketplaceId String
+  configuration Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([listingId, marketplaceId])
+}
+
+model Publication {
+  id            String   @id
+  listing       Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId     String
+  marketplaceId String
+  status        String
+  externalId    String?
+  lastError     String?
+  createdAt     DateTime
+  updatedAt     DateTime
+
+  @@index([listingId, marketplaceId])
+}
+
+/// --- Announcement vertical slice (TASK-021) ---
+/// Additive alongside Listing/Publication above: kept separate rather than
+/// migrating the existing Listing feature, per explicit decision. The third
+/// model below is named `AnnouncementPublication` (not `Publication`) purely
+/// to avoid a Prisma model name collision with the existing `Publication`
+/// model; it is otherwise the "Publication" described in TASK-021.
+enum ProductCondition {
+  NEW
+  LIKE_NEW
+  USED_GOOD
+  USED_ACCEPTABLE
+  FOR_PARTS
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  READY
+  PARTIALLY_PUBLISHED
+  PUBLISHED
+}
+
+enum ChannelValidationStatus {
+  PENDING
+  VALID
+  INVALID
+}
+
+enum PublicationStatus {
+  READY
+  PUBLISHING
+  PUBLISHED
+  FAILED
+}
+
+/// Central announcement. Price is stored as a non-negative integer in minor
+/// currency units (cents), matching `Announcement.price` in
+/// @marketplace-hub/domain (`validateAnnouncement` already assumes cents).
+model Announcement {
+  id           String                    @id @default(uuid())
+  title        String
+  description  String
+  priceAmount  Int
+  currency     String
+  categoryCode String
+  condition    ProductCondition
+  quantity     Int
+  status       AnnouncementStatus        @default(DRAFT)
+  channels     AnnouncementChannel[]
+  publications AnnouncementPublication[]
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+}
+
+/// Per-connector configuration and last known validation outcome for an
+/// announcement. `validationStatus` persists a richer tri-state than the API
+/// response's boolean `valid` (PENDING = never validated yet).
+model AnnouncementChannel {
+  id               String                   @id @default(uuid())
+  announcement     Announcement             @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  announcementId   String
+  connectorCode    String
+  enabled          Boolean                  @default(false)
+  configuration    Json
+  validationStatus ChannelValidationStatus  @default(PENDING)
+  validationErrors Json?
+  validatedAt      DateTime?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  publications     AnnouncementPublication[]
+
+  @@unique([announcementId, connectorCode])
+}
+
+/// Independent publication attempt for one announcement/channel pair.
+/// Multiple attempts are allowed over time (e.g. after a FAILED retry).
+model AnnouncementPublication {
+  id                    String              @id @default(uuid())
+  announcement          Announcement        @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  announcementId        String
+  announcementChannel   AnnouncementChannel @relation(fields: [announcementChannelId], references: [id], onDelete: Cascade)
+  announcementChannelId String
+  connectorCode         String
+  status                PublicationStatus   @default(READY)
+  externalListingId     String?
+  externalUrl           String?
+  lastError             String?
+  publishedAt           DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@index([announcementId])
+  @@index([announcementChannelId])
+}
