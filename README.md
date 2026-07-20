@@ -1,8 +1,13 @@
 # Marketplace Hub
 
-Monorepo pnpm per Marketplace Hub. Questo README copre la configurazione generale
-del repository e il backend (`apps/api`). La documentazione del frontend
-(`apps/web`) sarà aggiunta separatamente.
+Monorepo pnpm per Marketplace Hub.
+
+> **Nota**: il modello centrale canonico è `Announcement` (vedi
+> `docs/architecture/overview.md`). Il modello `Listing`/`Publication`
+> descritto più sotto (endpoint `/api/listings`) è la prima iterazione V1,
+> resta nel codice ma è superato: sia il frontend (`apps/web`) sia lo sviluppo
+> attivo usano `/api/announcements` (dettagli in
+> `docs/api/announcement-publication-api.md`).
 
 ## Prerequisiti
 

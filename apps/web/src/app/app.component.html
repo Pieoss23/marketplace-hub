@@ -25,17 +25,17 @@
     <div class="section-heading">
       <div>
         <p class="step">01 · Annuncio centrale</p>
-        <h2 id="create-title">Crea una nuova inserzione</h2>
+        <h2 id="create-title">{{ isEditing() ? 'Modifica inserzione' : 'Crea una nuova inserzione' }}</h2>
       </div>
       <p>I dati restano indipendenti dai marketplace.</p>
     </div>
 
-    <form [formGroup]="listingForm" (ngSubmit)="createListing()">
+    <form [formGroup]="announcementForm" (ngSubmit)="submitAnnouncement()">
       <label class="field field-wide">
         <span>Titolo</span>
         <input formControlName="title" placeholder="Es. Tastiera meccanica vintage" />
-        @if (listingForm.controls.title.touched && listingForm.controls.title.invalid) {
-          <small>Inserisci un titolo.</small>
+        @if (announcementForm.controls.title.touched && announcementForm.controls.title.invalid) {
+          <small>Inserisci un titolo (massimo 120 caratteri).</small>
         }
       </label>
 
@@ -46,24 +46,72 @@
           rows="4"
           placeholder="Condizioni, dettagli e ciò che rende unico l’oggetto"
         ></textarea>
-        @if (listingForm.controls.description.touched && listingForm.controls.description.invalid) {
+        @if (
+          announcementForm.controls.description.touched &&
+          announcementForm.controls.description.invalid
+        ) {
           <small>Inserisci una descrizione.</small>
         }
       </label>
 
       <label class="field">
-        <span>Prezzo · EUR</span>
+        <span>Prezzo · Euro</span>
         <input formControlName="priceEuros" type="number" min="0" step="0.01" />
       </label>
 
       <label class="field">
-        <span>URL immagine <em>opzionale</em></span>
-        <input formControlName="imageUrl" type="url" placeholder="https://…" />
+        <span>Valuta</span>
+        <input formControlName="currency" maxlength="3" placeholder="EUR" />
       </label>
 
-      <button class="primary-action" type="submit" [disabled]="isCreating()">
-        {{ isCreating() ? 'Salvataggio…' : 'Salva annuncio' }}
-      </button>
+      <label class="field">
+        <span>Categoria</span>
+        <input formControlName="categoryCode" placeholder="electronics" />
+        @if (
+          announcementForm.controls.categoryCode.touched &&
+          announcementForm.controls.categoryCode.invalid
+        ) {
+          <small>Inserisci una categoria.</small>
+        }
+      </label>
+
+      <label class="field">
+        <span>Condizione</span>
+        <select formControlName="condition">
+          @for (option of conditions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Quantità</span>
+        <input formControlName="quantity" type="number" min="1" step="1" />
+      </label>
+
+      <div class="form-actions">
+        @if (isEditing()) {
+          <button
+            class="secondary-action"
+            type="button"
+            [disabled]="isSubmitting()"
+            (click)="cancelEdit()"
+          >
+            Annulla
+          </button>
+        }
+        <button class="primary-action" type="submit" [disabled]="isSubmitting()">
+          {{
+            isSubmitting()
+              ? isEditing()
+                ? 'Aggiornamento…'
+                : 'Salvataggio…'
+              : isEditing()
+                ? 'Aggiorna annuncio'
+                : 'Salva annuncio'
+          }}
+        </button>
+      </div>
     </form>
   </section>
 
@@ -73,56 +121,47 @@
         <p class="step">02 · Pubblicazioni</p>
         <h2 id="listings-title">I tuoi annunci</h2>
       </div>
-      <p>{{ listings().length }} {{ listings().length === 1 ? 'annuncio' : 'annunci' }}</p>
+      <p>
+        {{ announcements().length }}
+        {{ announcements().length === 1 ? 'annuncio' : 'annunci' }}
+      </p>
     </div>
 
-    @if (isLoadingListings()) {
+    @if (isLoadingAnnouncements()) {
       <p class="empty-state">Caricamento annunci…</p>
-    } @else if (listings().length === 0) {
+    } @else if (announcements().length === 0) {
       <div class="empty-state">
         <strong>Il tuo spazio è ancora vuoto.</strong>
         <span>Crea il primo annuncio usando il modulo qui sopra.</span>
       </div>
     } @else {
       <div class="listing-grid">
-        @for (listing of listings(); track listing.id) {
+        @for (announcement of announcements(); track announcement.id) {
           <article class="listing-card">
             <div class="listing-main">
               <div class="listing-meta">
-                <span>Annuncio centrale</span>
-                <time>{{ listing.updatedAt | date: 'dd MMM yyyy, HH:mm' }}</time>
+                <span class="status-pill" [class.failed]="announcement.status === 'DRAFT'">
+                  {{ announcementStatusLabel(announcement.status) }}
+                </span>
+                <time>{{ announcement.updatedAt | date: 'dd MMM yyyy, HH:mm' }}</time>
               </div>
-              @if (editingListingId() === listing.id) {
-                <form class="edit-form" [formGroup]="editListingForm" (ngSubmit)="saveListing(listing.id)">
-                  <label class="field field-wide">
-                    <span>Titolo</span>
-                    <input formControlName="title" />
-                  </label>
-                  <label class="field field-wide">
-                    <span>Descrizione</span>
-                    <textarea formControlName="description" rows="4"></textarea>
-                  </label>
-                  <label class="field">
-                    <span>Prezzo · EUR</span>
-                    <input formControlName="priceEuros" type="number" min="0" step="0.01" />
-                  </label>
-                  <div class="edit-actions">
-                    <button class="text-action" type="button" (click)="cancelEditing()">Annulla</button>
-                    <button class="publish-action" type="submit" [disabled]="isListingBusy(listing.id)">
-                      {{ isListingBusy(listing.id) ? 'Salvataggio…' : 'Salva modifiche' }}
-                    </button>
-                  </div>
-                </form>
-              } @else {
-                <h3>{{ listing.title }}</h3>
-                <p>{{ listing.description }}</p>
-                <strong class="price">
-                  {{ listing.price.amountMinor / 100 | currency: listing.price.currency : 'symbol' }}
-                </strong>
-                <button class="text-action edit-action" type="button" (click)="startEditing(listing)">
-                  Modifica annuncio
-                </button>
-              }
+              <h3>{{ announcement.title }}</h3>
+              <p>{{ announcement.description }}</p>
+              <strong class="price">
+                {{ announcement.price / 100 | currency: announcement.currency : 'symbol' }}
+              </strong>
+              <p class="listing-submeta">
+                {{ announcement.categoryCode }} · {{ announcement.condition }} · quantità
+                {{ announcement.quantity }}
+              </p>
+              <button
+                class="text-action edit-action"
+                type="button"
+                [disabled]="isAnnouncementBusy(announcement.id)"
+                (click)="editAnnouncement(announcement)"
+              >
+                Modifica annuncio
+              </button>
             </div>
 
             <div class="publish-box">
@@ -130,50 +169,110 @@
                 <span class="mock-mark">M</span>
                 <div><strong>Mock Marketplace</strong><small>Connettore locale V1</small></div>
               </div>
-              <label class="compact-field">
-                <span>Categoria</span>
+
+              <label class="compact-field checkbox-field">
                 <input
-                  placeholder="electronics"
-                  [disabled]="isListingBusy(listing.id)"
-                  [value]="categories()[listing.id] ?? ''"
-                  (input)="setCategory(listing.id, $event)"
+                  type="checkbox"
+                  [disabled]="isAnnouncementBusy(announcement.id)"
+                  [checked]="channelDraft(announcement.id).enabled"
+                  (change)="setChannelEnabled(announcement.id, $event)"
+                />
+                <span>Canale abilitato</span>
+              </label>
+
+              <label class="compact-field">
+                <span>Categoria canale</span>
+                <input
+                  placeholder="vintage_keyboards"
+                  [disabled]="isAnnouncementBusy(announcement.id)"
+                  [value]="channelDraft(announcement.id).category"
+                  (input)="setChannelCategory(announcement.id, $event)"
                 />
               </label>
+
               <button
-                class="publish-action"
+                class="text-action"
                 type="button"
-                [disabled]="isListingBusy(listing.id) || !(categories()[listing.id] ?? '').trim()"
-                (click)="publishMock(listing.id, categories()[listing.id] ?? '')"
+                [disabled]="isAnnouncementBusy(announcement.id)"
+                (click)="saveChannel(announcement.id)"
               >
-                {{ isListingBusy(listing.id) ? 'Attendi…' : 'Pubblica su Mock' }}
+                Salva configurazione canale
               </button>
+
+              <div class="channel-actions">
+                <button
+                  class="text-action"
+                  type="button"
+                  [disabled]="isAnnouncementBusy(announcement.id)"
+                  (click)="validateChannel(announcement.id)"
+                >
+                  Valida
+                </button>
+                <button
+                  class="publish-action"
+                  type="button"
+                  [disabled]="isAnnouncementBusy(announcement.id)"
+                  (click)="publishChannel(announcement.id)"
+                >
+                  {{ isAnnouncementBusy(announcement.id) ? 'Attendi…' : 'Pubblica su Mock' }}
+                </button>
+              </div>
+
+              @if (mockChannel(announcement); as channel) {
+                <p class="channel-status">
+                  Stato canale: <strong>{{ channelStatusLabel(channel.status) }}</strong>
+                  @if (channel.externalUrl) {
+                    · <a [href]="channel.externalUrl" target="_blank" rel="noopener">annuncio pubblicato</a>
+                  }
+                </p>
+              }
+
+              @if (validationResults()[announcement.id]; as validation) {
+                <div class="validation-result" [class.valid]="validation.valid">
+                  <strong>{{ validation.valid ? 'Configurazione valida' : 'Problemi rilevati' }}</strong>
+                  @if (validation.issues.length > 0) {
+                    <ul>
+                      @for (issue of validation.issues; track issue.code) {
+                        <li>
+                          <span class="severity-pill" [class]="issue.severity.toLowerCase()">
+                            {{ issue.severity }}
+                          </span>
+                          {{ issue.message }}
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+              }
             </div>
 
             <div class="publication-history">
               <div class="history-heading">
-                <strong>Stato pubblicazioni</strong>
+                <strong>Storico pubblicazioni</strong>
                 <button
                   class="text-action"
                   type="button"
-                  [disabled]="isListingBusy(listing.id)"
-                  (click)="loadPublications(listing.id)"
+                  [disabled]="isAnnouncementBusy(announcement.id)"
+                  (click)="loadPublications(announcement.id)"
                 >
                   Aggiorna
                 </button>
               </div>
-              @if (publications()[listing.id]; as attempts) {
+              @if (publicationHistory()[announcement.id]; as attempts) {
                 @if (attempts.length === 0) {
                   <p>Nessun tentativo registrato.</p>
                 } @else {
                   <ul class="attempt-list">
-                    @for (attempt of attempts; track attempt.id) {
+                    @for (attempt of attempts; track attempt.publicationId) {
                       <li>
-                        <span class="status-pill" [class.failed]="attempt.status === 'failed'">
-                          {{ publicationStatusLabel(attempt.status) }}
+                        <span class="status-pill" [class.failed]="attempt.status === 'FAILED'">
+                          {{ channelStatusLabel(attempt.status) }}
                         </span>
-                        <time>{{ attempt.updatedAt | date: 'dd/MM, HH:mm' }}</time>
-                        @if (attempt.externalId) {
-                          <code>{{ attempt.externalId }}</code>
+                        @if (attempt.publishedAt) {
+                          <time>{{ attempt.publishedAt | date: 'dd/MM, HH:mm' }}</time>
+                        }
+                        @if (attempt.externalListingId) {
+                          <code>{{ attempt.externalListingId }}</code>
                         }
                       </li>
                     }
@@ -183,15 +282,6 @@
                 <p>Aggiorna per caricare lo storico.</p>
               }
             </div>
-
-            <button
-              class="delete-action"
-              type="button"
-              [disabled]="isListingBusy(listing.id)"
-              (click)="removeListing(listing.id)"
-            >
-              Elimina annuncio
-            </button>
           </article>
         }
       </div>

@@ -1,5 +1,10 @@
 # Prossimo passo: frontend annuncio e pubblicazione
 
+> **Stato al 20 luglio 2026**: superato. Il frontend è stato migrato dal
+> modello `Listing` descritto qui al modello canonico `Announcement`
+> (`docs/architecture/overview.md`, `docs/api/announcement-publication-api.md`).
+> Il contenuto sotto resta come riferimento storico sullo stato pre-pivot.
+
 ## Stato al 12 luglio 2026
 
 Il backend copre l'intero perimetro V1 descritto in `AGENTS.md`:

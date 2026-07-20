@@ -1,5 +1,17 @@
 # Panoramica architetturale
 
+> **Aggiornamento 20 luglio 2026**: il modello centrale canonico è ora
+> `Announcement` (`packages/domain/src/announcement.ts`, contratti "frozen" in
+> `packages/contracts/src/announcement.ts`, documentati in
+> `docs/domain/announcement.md` e `docs/api/announcement-publication-api.md`).
+> Il modello `Listing`/`Publication` descritto più sotto è la prima
+> iterazione V1 ed è considerato superato dal pivot verso `Announcement`
+> (multi-canale con configurazione e validazione per connettore, stato
+> pubblicazione indipendente per canale); resta nel codice (`apps/api/src/listings`,
+> `apps/api/src/publications`) e non è stato rimosso, ma non riceve più nuovo
+> sviluppo. Il frontend (`apps/web`) è stato migrato interamente al flusso
+> `Announcement`.
+
 Marketplace Hub adotta un monorepo pnpm semplice, senza orchestratori aggiuntivi. L'applicazione conserva un unico annuncio centrale e prepara configurazioni e pubblicazioni indipendenti per ciascun marketplace.
 
 ## Componenti
