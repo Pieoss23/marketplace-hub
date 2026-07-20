@@ -1,0 +1,47 @@
+{
+  "name": "@marketplace-hub/web",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "ng serve --proxy-config proxy.conf.json",
+    "build": "ng build",
+    "lint": "ng lint",
+    "test": "ng test --watch=false --browsers=ChromeHeadless",
+    "type-check": "tsc -p tsconfig.app.json --noEmit",
+    "typecheck": "pnpm type-check"
+  },
+  "dependencies": {
+    "@angular/common": "^20.0.0",
+    "@angular/core": "^20.0.0",
+    "@angular/forms": "^20.0.0",
+    "@angular/platform-browser": "^20.0.0",
+    "@angular/router": "^20.0.0",
+    "@marketplace-hub/contracts": "workspace:*",
+    "rxjs": "^7.8.0",
+    "tslib": "^2.8.0",
+    "zone.js": "^0.15.0"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^20.0.0",
+    "@angular-eslint/builder": "^20.0.0",
+    "@angular-eslint/eslint-plugin": "^20.0.0",
+    "@angular-eslint/eslint-plugin-template": "^20.0.0",
+    "@angular-eslint/template-parser": "^20.0.0",
+    "@angular/cli": "^20.0.0",
+    "@angular/compiler": "^20.0.0",
+    "@angular/compiler-cli": "^20.0.0",
+    "@types/jasmine": "^5.1.0",
+    "@eslint/js": "^9.0.0",
+    "angular-eslint": "^20.0.0",
+    "eslint": "^9.0.0",
+    "jasmine-core": "^5.7.0",
+    "karma": "^6.4.0",
+    "karma-chrome-launcher": "^3.2.0",
+    "karma-coverage": "^2.2.0",
+    "karma-jasmine": "^5.1.0",
+    "karma-jasmine-html-reporter": "^2.1.0",
+    "prettier": "^3.5.0",
+    "typescript-eslint": "^8.0.0",
+    "typescript": "~5.8.0"
+  }
+}

@@ -1,0 +1,202 @@
+<header class="topbar">
+  <div>
+    <p class="eyebrow">Marketplace Hub</p>
+    <h1>Un annuncio.<br /><span>Pronto ovunque.</span></h1>
+  </div>
+  <div class="backend-status" [class.online]="health()">
+    <span class="status-dot"></span>
+    {{ health() ? 'Backend operativo' : 'Backend non raggiungibile' }}
+  </div>
+</header>
+
+<main class="workspace">
+  @if (pageErrors().length > 0) {
+    <section class="error-panel" aria-live="assertive">
+      <strong>Controlla questi dettagli</strong>
+      <ul>
+        @for (error of pageErrors(); track error) {
+          <li>{{ error }}</li>
+        }
+      </ul>
+    </section>
+  }
+
+  <section class="create-panel" aria-labelledby="create-title">
+    <div class="section-heading">
+      <div>
+        <p class="step">01 · Annuncio centrale</p>
+        <h2 id="create-title">Crea una nuova inserzione</h2>
+      </div>
+      <p>I dati restano indipendenti dai marketplace.</p>
+    </div>
+
+    <form [formGroup]="listingForm" (ngSubmit)="createListing()">
+      <label class="field field-wide">
+        <span>Titolo</span>
+        <input formControlName="title" placeholder="Es. Tastiera meccanica vintage" />
+        @if (listingForm.controls.title.touched && listingForm.controls.title.invalid) {
+          <small>Inserisci un titolo.</small>
+        }
+      </label>
+
+      <label class="field field-wide">
+        <span>Descrizione</span>
+        <textarea
+          formControlName="description"
+          rows="4"
+          placeholder="Condizioni, dettagli e ciò che rende unico l’oggetto"
+        ></textarea>
+        @if (listingForm.controls.description.touched && listingForm.controls.description.invalid) {
+          <small>Inserisci una descrizione.</small>
+        }
+      </label>
+
+      <label class="field">
+        <span>Prezzo · EUR</span>
+        <input formControlName="priceEuros" type="number" min="0" step="0.01" />
+      </label>
+
+      <label class="field">
+        <span>URL immagine <em>opzionale</em></span>
+        <input formControlName="imageUrl" type="url" placeholder="https://…" />
+      </label>
+
+      <button class="primary-action" type="submit" [disabled]="isCreating()">
+        {{ isCreating() ? 'Salvataggio…' : 'Salva annuncio' }}
+      </button>
+    </form>
+  </section>
+
+  <section class="listings-panel" aria-labelledby="listings-title">
+    <div class="section-heading">
+      <div>
+        <p class="step">02 · Pubblicazioni</p>
+        <h2 id="listings-title">I tuoi annunci</h2>
+      </div>
+      <p>{{ listings().length }} {{ listings().length === 1 ? 'annuncio' : 'annunci' }}</p>
+    </div>
+
+    @if (isLoadingListings()) {
+      <p class="empty-state">Caricamento annunci…</p>
+    } @else if (listings().length === 0) {
+      <div class="empty-state">
+        <strong>Il tuo spazio è ancora vuoto.</strong>
+        <span>Crea il primo annuncio usando il modulo qui sopra.</span>
+      </div>
+    } @else {
+      <div class="listing-grid">
+        @for (listing of listings(); track listing.id) {
+          <article class="listing-card">
+            <div class="listing-main">
+              <div class="listing-meta">
+                <span>Annuncio centrale</span>
+                <time>{{ listing.updatedAt | date: 'dd MMM yyyy, HH:mm' }}</time>
+              </div>
+              @if (editingListingId() === listing.id) {
+                <form class="edit-form" [formGroup]="editListingForm" (ngSubmit)="saveListing(listing.id)">
+                  <label class="field field-wide">
+                    <span>Titolo</span>
+                    <input formControlName="title" />
+                  </label>
+                  <label class="field field-wide">
+                    <span>Descrizione</span>
+                    <textarea formControlName="description" rows="4"></textarea>
+                  </label>
+                  <label class="field">
+                    <span>Prezzo · EUR</span>
+                    <input formControlName="priceEuros" type="number" min="0" step="0.01" />
+                  </label>
+                  <div class="edit-actions">
+                    <button class="text-action" type="button" (click)="cancelEditing()">Annulla</button>
+                    <button class="publish-action" type="submit" [disabled]="isListingBusy(listing.id)">
+                      {{ isListingBusy(listing.id) ? 'Salvataggio…' : 'Salva modifiche' }}
+                    </button>
+                  </div>
+                </form>
+              } @else {
+                <h3>{{ listing.title }}</h3>
+                <p>{{ listing.description }}</p>
+                <strong class="price">
+                  {{ listing.price.amountMinor / 100 | currency: listing.price.currency : 'symbol' }}
+                </strong>
+                <button class="text-action edit-action" type="button" (click)="startEditing(listing)">
+                  Modifica annuncio
+                </button>
+              }
+            </div>
+
+            <div class="publish-box">
+              <div class="marketplace-label">
+                <span class="mock-mark">M</span>
+                <div><strong>Mock Marketplace</strong><small>Connettore locale V1</small></div>
+              </div>
+              <label class="compact-field">
+                <span>Categoria</span>
+                <input
+                  placeholder="electronics"
+                  [disabled]="isListingBusy(listing.id)"
+                  [value]="categories()[listing.id] ?? ''"
+                  (input)="setCategory(listing.id, $event)"
+                />
+              </label>
+              <button
+                class="publish-action"
+                type="button"
+                [disabled]="isListingBusy(listing.id) || !(categories()[listing.id] ?? '').trim()"
+                (click)="publishMock(listing.id, categories()[listing.id] ?? '')"
+              >
+                {{ isListingBusy(listing.id) ? 'Attendi…' : 'Pubblica su Mock' }}
+              </button>
+            </div>
+
+            <div class="publication-history">
+              <div class="history-heading">
+                <strong>Stato pubblicazioni</strong>
+                <button
+                  class="text-action"
+                  type="button"
+                  [disabled]="isListingBusy(listing.id)"
+                  (click)="loadPublications(listing.id)"
+                >
+                  Aggiorna
+                </button>
+              </div>
+              @if (publications()[listing.id]; as attempts) {
+                @if (attempts.length === 0) {
+                  <p>Nessun tentativo registrato.</p>
+                } @else {
+                  <ul class="attempt-list">
+                    @for (attempt of attempts; track attempt.id) {
+                      <li>
+                        <span class="status-pill" [class.failed]="attempt.status === 'failed'">
+                          {{ publicationStatusLabel(attempt.status) }}
+                        </span>
+                        <time>{{ attempt.updatedAt | date: 'dd/MM, HH:mm' }}</time>
+                        @if (attempt.externalId) {
+                          <code>{{ attempt.externalId }}</code>
+                        }
+                      </li>
+                    }
+                  </ul>
+                }
+              } @else {
+                <p>Aggiorna per caricare lo storico.</p>
+              }
+            </div>
+
+            <button
+              class="delete-action"
+              type="button"
+              [disabled]="isListingBusy(listing.id)"
+              (click)="removeListing(listing.id)"
+            >
+              Elimina annuncio
+            </button>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</main>
+
+<footer>Marketplace Hub · V1 Mock Connector</footer>

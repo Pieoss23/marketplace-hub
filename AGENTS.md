@@ -89,7 +89,8 @@ Durante l’implementazione:
 * mantenere TypeScript strict;
 * aggiungere test per ogni comportamento introdotto;
 * utilizzare nomi espliciti;
-* non utilizzare `any`, salvo motivazione documentata;
+* non utilizzare `any`;
+* aggiornare la documentazione quando viene presa una decisione architetturale;
 * non lasciare TODO generici.
 
 Al termine:
