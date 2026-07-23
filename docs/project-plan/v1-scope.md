@@ -19,7 +19,7 @@
 - integrazioni o API di marketplace reali;
 - sincronizzazione automatica degli annunci venduti.
 
-Il frontend V1 include dashboard, creazione ed eliminazione degli annunci, configurazione del marketplace mock, pubblicazione e lettura degli stati indipendenti. Autenticazione e upload di file restano fuori dal perimetro.
+Il frontend V1 include dashboard, creazione ed eliminazione degli annunci, configurazione del marketplace mock, pubblicazione e lettura degli stati indipendenti. Login e signup sono stati aggiunti (autenticazione JWT, nessun isolamento dati per utente: un solo spazio di annunci condiviso da tutti gli account). L'upload di file resta fuori dal perimetro.
 
 In parallelo alla V1 applicativa è ammesso un esperimento separato di estensione
 Chrome per validare il riutilizzo assistito dell'annuncio. Il suo perimetro e i

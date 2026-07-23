@@ -97,6 +97,24 @@ di sicurezza del manifest (host locali e permessi minimi).
 10. Dal popup premi "Apri nella web app" e verifica che la dashboard evidenzi
     lo stesso annuncio.
 
+## Ultima verifica manuale
+
+Verifica completata con esito positivo il 23 luglio 2026 su Chrome in Windows
+con progetto eseguito in WSL Ubuntu:
+
+- estensione unpacked caricata da `apps/extension/dist`;
+- login Marketplace Hub riuscito;
+- annunci letti dalla REST API locale;
+- copia di titolo, descrizione, prezzo e riepilogo verificata;
+- compilazione di titolo, descrizione e prezzo sulla pagina demo verificata;
+- handoff web app → estensione con preselezione verificato;
+- handoff estensione → web app con evidenziazione verificato;
+- nessun invio automatico del form.
+
+La prova conferma il funzionamento tecnico locale dell'MVP. Non sostituisce le
+interviste e i test con i partecipanti necessari per valutare le metriche di
+prodotto.
+
 ## Limitazioni (per costruzione, non da rimuovere in questa fase)
 
 - Nessun login o storage di credenziali di marketplace.

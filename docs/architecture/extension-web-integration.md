@@ -41,11 +41,14 @@ login attraverso la REST API, conserva solo JWT e utente in
 `chrome.storage.local` e cancella la sessione su logout, cambio endpoint o
 risposta `401`. La password vive soltanto nel form durante la richiesta.
 
-Nello stato V1 corrente il backend protegge le mutazioni Announcement, mentre
-le letture restano pubbliche per decisione esplicita dei test API. Il popup
-richiede comunque una sessione per coerenza di prodotto. L'eventuale protezione
-server delle letture deve essere decisa insieme al modello di ownership degli
-annunci; non va simulata soltanto nel client.
+Nello stato V1 corrente il backend protegge **tutti** gli endpoint Announcement,
+letture incluse (`JwtAuthGuard` a livello di controller): la sessione richiesta
+dal popup non è solo coerenza di prodotto lato client, ma riflette un vincolo
+reale del server. Un token mancante o scaduto restituisce `401`; l'estensione
+lo intercetta, cancella la sessione locale e richiede un nuovo accesso. Non
+esiste isolamento dei dati per utente: tutti gli account autenticati vedono lo
+stesso spazio di annunci, coerente con "un singolo annuncio centrale"
+(`docs/project-plan/v1-scope.md`).
 
 Il manifest autorizza in modo permanente soltanto API locali. Un endpoint
 HTTP(S) remoto richiede un host permission opzionale limitato alla sua origine,

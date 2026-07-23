@@ -99,3 +99,19 @@ L'esperimento sarà considerato verificabile quando saranno disponibili:
 
 Qualsiasi adattatore futuro deve restare separato dal modello centrale e non può
 introdurre nel dominio selettori DOM o payload specifici del sito.
+
+## Stato al 23 luglio 2026
+
+La verifica tecnica locale è stata completata con esito positivo:
+
+- build unpacked e smoke check superati;
+- caricamento manuale in Chrome riuscito;
+- autenticazione e lettura annunci via REST API riuscite;
+- azioni di copia verificate;
+- messaggio popup → content script e compilazione della pagina demo verificati;
+- integrazione bidirezionale con la dashboard verificata;
+- lint, type-check, build e suite automatiche del monorepo superati.
+
+Restano da eseguire le interviste e i test osservati con almeno 5 partecipanti.
+Di conseguenza non è ancora possibile applicare i criteri quantitativi di
+decisione né autorizzare un adattatore per un marketplace reale.

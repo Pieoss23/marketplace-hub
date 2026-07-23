@@ -49,6 +49,8 @@ Variabili principali:
 | `POSTGRES_DB` | Database PostgreSQL | `marketplace_hub` |
 | `POSTGRES_PORT` | Porta esposta da Postgres | `5432` |
 | `DATABASE_URL` | Connection string usata da Prisma | vedi `.env.example` |
+| `JWT_SECRET` | Segreto di firma dei token di sessione | dev-only, da sostituire fuori da locale |
+| `JWT_EXPIRES_IN_SECONDS` | Durata del token in secondi | `604800` (7 giorni) |
 
 ## Avvio di PostgreSQL
 
@@ -96,10 +98,15 @@ pnpm dev
 L'API sarà disponibile su `http://localhost:3000/api`, con:
 
 - health check: `GET /api/health`
-- annuncio centrale: `GET/POST /api/listings`, `GET/PATCH/DELETE /api/listings/:id`
-- pubblicazione mock e stato: `POST /api/listings/:listingId/publications/mock`,
-  `GET /api/listings/:listingId/publications` (dettagli in
-  `docs/integration/publications-api.md`)
+- autenticazione: `POST /api/auth/signup`, `POST /api/auth/login`,
+  `GET /api/auth/me`
+- annuncio centrale (modello canonico, richiede `Authorization: Bearer
+  <accessToken>` su **tutti** gli endpoint, letture incluse): `GET/POST
+  /api/announcements`, `GET/PUT/DELETE /api/announcements/:id`, canali e
+  pubblicazione mock (dettagli in
+  `docs/api/announcement-publication-api.md`)
+- endpoint `/api/listings` (modello superato, non richiede più sviluppo:
+  vedi `docs/architecture/overview.md`)
 - documentazione OpenAPI: `GET /api/docs`
 
 Gli errori di validazione (sia a livello di DTO che di dominio) includono un
@@ -202,3 +209,6 @@ marketplace-hub/
 ├── pnpm-workspace.yaml
 └── package.json
 ```
+
+Per costruzione, caricamento unpacked e prova manuale dell'estensione consulta
+[`apps/extension/README.md`](./apps/extension/README.md).

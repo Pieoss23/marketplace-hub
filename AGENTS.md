@@ -13,6 +13,13 @@ La V1 deve concentrarsi esclusivamente su:
 5. pubblicazione attraverso un connettore mock;
 6. salvataggio indipendente dello stato di ogni pubblicazione.
 
+## Autenticazione
+
+Login e signup (JWT) sono implementati e proteggono tutti gli endpoint
+`/api/announcements`, letture incluse. Non introducono isolamento dei dati per
+utente: resta un solo spazio di annunci condiviso, coerente col principio "un
+solo annuncio centrale". Dettagli in `docs/architecture/overview.md`.
+
 ## Esperimento di validazione: estensione Chrome
 
 È consentito sviluppare un MVP separato in `apps/extension` per validare il

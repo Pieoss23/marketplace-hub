@@ -4,6 +4,8 @@ La dashboard Angular implementa il flusso utente essenziale della V1 in una sing
 
 ## Funzionalità
 
+- accesso e registrazione (`/login`, `/signup`); il resto dell'app è
+  raggiungibile solo con una sessione valida (`authGuard`);
 - verifica sintetica della raggiungibilità del backend;
 - elenco degli annunci centrali;
 - creazione di un annuncio con titolo, descrizione, prezzo EUR e URL immagine opzionale;
@@ -20,7 +22,7 @@ La dashboard Angular implementa il flusso utente essenziale della V1 in una sing
 
 ## Confini
 
-Non sono presenti autenticazione, upload di file, marketplace reali, inbox, AI o automazione browser. Il frontend usa esclusivamente i contratti esportati da `@marketplace-hub/contracts` e gli endpoint REST documentati.
+Non sono presenti upload di file, marketplace reali, inbox, AI o automazione browser. Il frontend usa esclusivamente i contratti esportati da `@marketplace-hub/contracts` e gli endpoint REST documentati. L'autenticazione non introduce isolamento dei dati per utente: tutti gli account condividono lo stesso spazio di annunci.
 
 ## Sviluppo locale
 
