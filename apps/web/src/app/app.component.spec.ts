@@ -2,7 +2,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { AppComponent } from './app.component';
+import {
+  AppComponent,
+  buildAnnouncementContextUrl,
+  readAnnouncementIdFromUrl,
+} from './app.component';
 
 const announcement = {
   id: 'announcement-1',
@@ -48,6 +52,37 @@ describe('AppComponent', () => {
     httpTesting.expectOne('/api/health').error(new ProgressEvent('network error'));
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Backend non raggiungibile');
+  });
+
+  it('highlights the announcement selected from the extension deep link', () => {
+    flushInitialRequests([]);
+    fixture.destroy();
+    history.replaceState({}, '', '/?announcementId=announcement-1');
+    fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    flushInitialRequests([announcement]);
+    fixture.detectChanges();
+
+    const linkedCard = fixture.nativeElement.querySelector(
+      '#announcement-announcement-1.linked-announcement',
+    ) as HTMLElement | null;
+    expect(linkedCard).not.toBeNull();
+    expect(linkedCard?.textContent).toContain('Annuncio collegato all’estensione Chrome');
+    history.replaceState({}, '', '/');
+  });
+
+  it('prepares an explicit announcement handoff to the extension', () => {
+    flushInitialRequests([announcement]);
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('.extension-action') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(new URL(window.location.href).searchParams.get('announcementId')).toBe(announcement.id);
+    expect(fixture.nativeElement.textContent).toContain(
+      'apri l’estensione Chrome per trovare questo annuncio selezionato',
+    );
+    history.replaceState({}, '', '/');
   });
 
   it('creates an announcement from the central form', () => {
@@ -103,6 +138,50 @@ describe('AppComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Updated keyboard');
     expect(fixture.nativeElement.textContent).toContain('Crea una nuova inserzione');
+  });
+
+  it('removes an announcement from the list on delete', () => {
+    flushInitialRequests([announcement]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Mechanical keyboard');
+
+    (fixture.nativeElement.querySelector('.delete-action') as HTMLButtonElement).click();
+
+    const request = httpTesting.expectOne('/api/announcements/announcement-1');
+    expect(request.request.method).toBe('DELETE');
+    request.flush(null);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).not.toContain('Mechanical keyboard');
+    expect(fixture.nativeElement.textContent).toContain('Il tuo spazio è ancora vuoto');
+  });
+
+  it('exits edit mode when the announcement being edited is deleted', () => {
+    flushInitialRequests([announcement]);
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.edit-action') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Modifica inserzione');
+
+    (fixture.nativeElement.querySelector('.delete-action') as HTMLButtonElement).click();
+    httpTesting.expectOne('/api/announcements/announcement-1').flush(null);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Crea una nuova inserzione');
+  });
+
+  it('shows an error and keeps the announcement when delete fails', () => {
+    flushInitialRequests([announcement]);
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('.delete-action') as HTMLButtonElement).click();
+    httpTesting
+      .expectOne('/api/announcements/announcement-1')
+      .flush({ message: 'Boom' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Mechanical keyboard');
+    expect(fixture.nativeElement.textContent).toContain('Controlla questi dettagli');
   });
 
   it('validates and publishes the mock channel, rendering issues and history', () => {
@@ -164,4 +243,25 @@ describe('AppComponent', () => {
     input.value = value;
     input.dispatchEvent(new Event('input'));
   }
+});
+
+describe('readAnnouncementIdFromUrl', () => {
+  it('reads and decodes the extension deep-link parameter', () => {
+    expect(readAnnouncementIdFromUrl('http://localhost:4200/?announcementId=id%20with%20spaces')).toBe(
+      'id with spaces',
+    );
+  });
+
+  it('ignores a missing or blank announcement id', () => {
+    expect(readAnnouncementIdFromUrl('http://localhost:4200/')).toBeNull();
+    expect(readAnnouncementIdFromUrl('http://localhost:4200/?announcementId=%20')).toBeNull();
+  });
+});
+
+describe('buildAnnouncementContextUrl', () => {
+  it('preserves existing query parameters and encodes the selected announcement', () => {
+    expect(
+      buildAnnouncementContextUrl('http://localhost:4200/?mode=compact', 'id with spaces'),
+    ).toBe('http://localhost:4200/?mode=compact&announcementId=id+with+spaces');
+  });
 });

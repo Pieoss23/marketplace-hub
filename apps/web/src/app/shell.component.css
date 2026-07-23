@@ -1,0 +1,22 @@
+.session-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 0.75rem clamp(1rem, 4vw, 2.5rem);
+  color: #47534c;
+  font-size: 0.82rem;
+}
+.session-bar button {
+  border: 1px solid #cbc9be;
+  border-radius: 0.6rem;
+  padding: 0.4rem 0.9rem;
+  color: #47534c;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.session-bar button:hover {
+  background: #f1f5e8;
+}

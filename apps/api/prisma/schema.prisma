@@ -7,6 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Registered user. V1 keeps a single shared announcement space (see
+/// `docs/project-plan/v1-scope.md`): authentication gates who can use the
+/// app rather than partitioning data per account. Authentication issues a
+/// JWT carrying `sub = User.id`.
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  passwordSalt String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 /// Central listing, mirroring the pure domain type `Listing` in
 /// @marketplace-hub/domain. Price is stored in minor currency units to
 /// avoid floating point rounding issues.

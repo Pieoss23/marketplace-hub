@@ -17,11 +17,32 @@ Marketplace Hub adotta un monorepo pnpm semplice, senza orchestratori aggiuntivi
 ## Componenti
 
 - `apps/web` è il client Angular standalone. Usa i contratti condivisi per comunicare via REST e non contiene dettagli dei payload esterni.
+- `apps/extension` è una superficie Chrome opzionale dello stesso prodotto:
+  legge gli annunci tramite la REST API condivisa e può aprire nella dashboard
+  l'annuncio selezionato tramite deep link. Confini e roadmap sono descritti in
+  `docs/architecture/extension-web-integration.md`.
 - `apps/api` ospita il backend NestJS, responsabile dei casi d'uso, della persistenza e dell'orchestrazione dei connettori.
 - PostgreSQL è il database applicativo, accessibile dal backend tramite Prisma. Frontend e connettori non vi accedono direttamente.
 - `packages/domain` ospita il modello di dominio puro e indipendente dai framework.
 - `packages/contracts` definisce i contratti condivisi ai confini API, a partire da `HealthResponse`.
 - `packages/connector-sdk` ospita il contratto tecnico comune dei connettori.
+
+## Autenticazione
+
+`apps/api/src/auth` espone `POST /api/auth/signup`, `POST /api/auth/login` e
+`GET /api/auth/me` (JWT firmato con `@nestjs/jwt`, password con `scrypt` di
+`node:crypto`). `apps/web` mostra `/login` e `/signup` (`ShellComponent` come
+root, `AppComponent` raggiungibile solo se autenticato tramite `authGuard`) e
+allega il token con un interceptor HTTP.
+
+Tutti gli endpoint su `/api/announcements` (incluse le letture: elenco,
+dettaglio, storico pubblicazioni) richiedono autenticazione (`JwtAuthGuard` a
+livello di controller). `apps/extension` gestisce il proprio login/sessione
+(vedi `docs/architecture/extension-web-integration.md`) e allega il token
+alle richieste; alla scadenza o revoca del token l'estensione richiede un
+nuovo accesso invece di fallire silenziosamente. Non c'è isolamento dei dati
+per utente: tutti gli utenti autenticati condividono lo stesso spazio di
+annunci, coerente con "un singolo annuncio centrale" (`docs/project-plan/v1-scope.md`).
 
 ## Evoluzione a connettori
 

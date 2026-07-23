@@ -106,16 +106,71 @@ Gli errori di validazione (sia a livello di DTO che di dominio) includono un
 campo `errors` con oggetti strutturati `{ code, field, message }`, oltre al
 campo `message` standard di NestJS.
 
-## Test
+## Validazione del progetto
+
+Prima di eseguire le verifiche, controlla che Node e pnpm siano quelli Linux e
+rispettino le versioni dichiarate dal repository:
 
 ```bash
+node --version
+pnpm --version
+command -v node
+command -v pnpm
+```
+
+### Verifica rapida
+
+Lint, type-check e build non richiedono servizi esterni:
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm build
+```
+
+I test unitari dei package e dell'API possono essere eseguiti senza PostgreSQL:
+
+```bash
+pnpm --filter @marketplace-hub/domain test
+pnpm --filter @marketplace-hub/contracts test
+pnpm --filter @marketplace-hub/connector-sdk test
+pnpm --filter @marketplace-hub/api exec jest --runInBand src
+pnpm --filter @marketplace-hub/extension test
+```
+
+I test del frontend richiedono Chrome o Chromium disponibile in modalità
+headless:
+
+```bash
+pnpm --filter @marketplace-hub/web test
+```
+
+### Verifica completa
+
+La suite API include anche i test e2e di `/api/announcements`,
+`/api/listings` e delle relative pubblicazioni. Questi test condividono un
+database PostgreSQL reale e vengono eseguiti in serie. Prepara l'ambiente e
+lancia l'intera suite con:
+
+```bash
+cp .env.example .env
+docker compose up -d postgres
+pnpm db:generate
+pnpm db:migrate
+pnpm lint
+pnpm typecheck
+pnpm build
 pnpm test
 ```
 
-I test e2e di `apps/api` (inclusi quelli di `/api/listings` e
-`/api/listings/:listingId/publications`) richiedono PostgreSQL attivo e
-migrato: `docker compose up -d postgres && pnpm db:migrate` prima di
-`pnpm test`.
+La validazione è completa quando tutti i comandi terminano con codice `0`.
+Per verificare rapidamente il database usa `docker compose ps`: il servizio
+`postgres` deve risultare `healthy`.
+
+> **WSL**: errori UNC o `UtilBindVsockAnyPort` indicano normalmente che
+> `node`, `pnpm` o `docker` stanno risolvendo a eseguibili Windows, oppure che
+> l'integrazione WSL di Docker Desktop non è attiva. Correggi prima il `PATH` e
+> ripeti i quattro controlli iniziali; non sono errori della suite applicativa.
 
 ## Build
 
@@ -136,7 +191,8 @@ pnpm typecheck
 marketplace-hub/
 ├── apps/
 │   ├── api/                  # backend NestJS
-│   └── web/                  # frontend Angular
+│   ├── web/                  # frontend Angular
+│   └── extension/            # esperimento Chrome
 ├── packages/
 │   ├── domain/                # tipi ed enum del dominio
 │   ├── contracts/              # contratti API condivisi

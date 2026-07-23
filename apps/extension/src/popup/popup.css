@@ -1,0 +1,70 @@
+body {
+  width: 320px;
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  margin: 0;
+}
+
+main {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+h1 {
+  font-size: 15px;
+  margin: 0;
+}
+
+.settings-row {
+  display: flex;
+  gap: 6px;
+}
+
+#api-base-url,
+#web-app-base-url {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.auth-section,
+#login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#auth-status {
+  margin: 0;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#announcement-select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#status,
+#feedback {
+  margin: 0;
+  color: #555;
+  min-height: 1em;
+}

@@ -85,6 +85,18 @@ export class PrismaAnnouncementRepository implements AnnouncementRepository {
     await this.prisma.announcement.update({ where: { id }, data: { status } });
   }
 
+  async delete(id: string): Promise<boolean> {
+    try {
+      await this.prisma.announcement.delete({ where: { id } });
+      return true;
+    } catch (error) {
+      if (isRecordNotFoundError(error)) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
   async findChannel(
     announcementId: string,
     connectorCode: string,

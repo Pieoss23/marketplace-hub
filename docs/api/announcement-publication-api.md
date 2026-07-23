@@ -2,6 +2,10 @@
 
 This document contains the frozen REST API endpoints, DTO contracts, and expected responses for the V1 release.
 
+**Authentication**: every endpoint below requires `Authorization: Bearer <accessToken>`,
+obtained from `POST /api/auth/signup` or `POST /api/auth/login` (see
+`docs/architecture/overview.md`). Missing or invalid tokens return `401`.
+
 ---
 
 ## 1. Announcement Management Endpoints
@@ -48,6 +52,15 @@ Replace/update an existing announcement.
 * **Path**: `/api/announcements/:id`
 * **Request Body** (`UpdateAnnouncementRequest`): Same structure as `CreateAnnouncementRequest`.
 * **Success Response**: `200 OK` (`AnnouncementResponse`)
+
+---
+
+### 1.5 Delete Announcement
+Delete an announcement and, via cascade, its channel configurations and publication history.
+* **Method**: `DELETE`
+* **Path**: `/api/announcements/:id`
+* **Success Response**: `204 No Content`
+* **Error Response**: `404 Not Found` if the announcement does not exist.
 
 ---
 

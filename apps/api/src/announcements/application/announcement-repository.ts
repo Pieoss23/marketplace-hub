@@ -57,6 +57,8 @@ export interface AnnouncementRepository {
     status: AnnouncementStatus,
   ): Promise<Announcement | null>;
   updateStatus(id: string, status: AnnouncementStatus): Promise<void>;
+  /** Deletes the announcement and (via cascade) its channels and publications. Returns false if it didn't exist. */
+  delete(id: string): Promise<boolean>;
 
   findChannel(announcementId: string, connectorCode: string): Promise<AnnouncementChannel | null>;
   findChannels(announcementId: string): Promise<AnnouncementChannel[]>;

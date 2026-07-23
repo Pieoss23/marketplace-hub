@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -8,9 +9,17 @@ import {
   Post,
   Put,
   UseFilters,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { Announcement } from '@marketplace-hub/domain';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AnnouncementApiException } from './announcement-api.exception';
 import { AnnouncementErrorFilter } from './announcement-error.filter';
 import {
@@ -31,6 +40,7 @@ import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
 @ApiTags('announcements')
 @Controller('announcements')
 @UseFilters(AnnouncementErrorFilter)
+@UseGuards(JwtAuthGuard)
 export class AnnouncementsController {
   constructor(
     private readonly announcementsService: AnnouncementsService,
@@ -71,6 +81,14 @@ export class AnnouncementsController {
   ): Promise<AnnouncementResponseDto> {
     const announcement = await this.announcementsService.update(id, dto);
     return this.toResponse(announcement);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete an announcement and its channels/publications' })
+  @ApiNoContentResponse()
+  async remove(@Param('id') id: string): Promise<void> {
+    await this.announcementsService.remove(id);
   }
 
   @Put(':id/channels/:connectorCode')

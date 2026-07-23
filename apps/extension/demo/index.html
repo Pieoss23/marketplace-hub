@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <title>Pagina demo — form di test per l'estensione</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 480px;
+        margin: 40px auto;
+      }
+      label {
+        display: block;
+        margin-top: 12px;
+        font-weight: 600;
+      }
+      input,
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 6px;
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Form demo (solo per validazione locale)</h1>
+    <p>
+      Questa pagina non pubblica nulla e non è un marketplace reale: serve solo a
+      verificare che l'estensione possa copiare i campi di un annuncio dopo un
+      comando esplicito dell'utente.
+    </p>
+    <form>
+      <label for="demo-title">Titolo</label>
+      <input id="demo-title" name="title" type="text" />
+
+      <label for="demo-description">Descrizione</label>
+      <textarea id="demo-description" name="description" rows="4"></textarea>
+
+      <label for="demo-price">Prezzo</label>
+      <input id="demo-price" name="price" type="text" />
+    </form>
+  </body>
+</html>

@@ -95,6 +95,32 @@ describe('PrismaAnnouncementRepository', () => {
     ).rejects.toBe(error);
   });
 
+  it('deletes an existing announcement', async () => {
+    const deleteFn = jest.fn().mockResolvedValue({});
+    const prisma = { announcement: { delete: deleteFn } } as unknown as PrismaService;
+    const repository = new PrismaAnnouncementRepository(prisma);
+
+    await expect(repository.delete('announcement-1')).resolves.toBe(true);
+    expect(deleteFn).toHaveBeenCalledWith({ where: { id: 'announcement-1' } });
+  });
+
+  it('returns false on delete when the announcement does not exist', async () => {
+    const deleteFn = jest.fn().mockRejectedValue({ code: 'P2025' });
+    const prisma = { announcement: { delete: deleteFn } } as unknown as PrismaService;
+    const repository = new PrismaAnnouncementRepository(prisma);
+
+    await expect(repository.delete('missing')).resolves.toBe(false);
+  });
+
+  it('rethrows unrelated errors on delete', async () => {
+    const error = new Error('connection lost');
+    const deleteFn = jest.fn().mockRejectedValue(error);
+    const prisma = { announcement: { delete: deleteFn } } as unknown as PrismaService;
+    const repository = new PrismaAnnouncementRepository(prisma);
+
+    await expect(repository.delete('announcement-1')).rejects.toBe(error);
+  });
+
   it('upserts a channel by announcementId/connectorCode', async () => {
     const upsert = jest.fn().mockResolvedValue({
       id: 'channel-1',

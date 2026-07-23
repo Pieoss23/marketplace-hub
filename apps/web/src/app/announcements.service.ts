@@ -33,6 +33,10 @@ export class AnnouncementsService {
     return this.http.put<AnnouncementResponse>(`${this.resourceUrl}/${id}`, request);
   }
 
+  remove(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.resourceUrl}/${id}`);
+  }
+
   enableChannel(
     id: string,
     connectorCode: string,

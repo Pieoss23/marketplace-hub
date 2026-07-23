@@ -1,0 +1,7 @@
+@if (auth.isAuthenticated()) {
+  <div class="session-bar">
+    <span>{{ auth.currentUser()?.email }}</span>
+    <button type="button" (click)="logout()">Esci</button>
+  </div>
+}
+<router-outlet />

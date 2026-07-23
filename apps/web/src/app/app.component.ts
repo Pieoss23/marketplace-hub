@@ -70,6 +70,8 @@ export class AppComponent implements OnInit {
   protected readonly isLoadingAnnouncements = signal(false);
   protected readonly isSubmitting = signal(false);
   protected readonly editingAnnouncementId = signal<string | null>(null);
+  protected readonly linkedAnnouncementId = signal(readAnnouncementIdFromUrl(window.location.href));
+  protected readonly extensionHandoffAnnouncementId = signal<string | null>(null);
   protected readonly busyAnnouncementIds = signal<ReadonlySet<string>>(new Set());
 
   protected readonly isEditing = computed(() => this.editingAnnouncementId() !== null);
@@ -132,6 +134,35 @@ export class AppComponent implements OnInit {
 
   protected cancelEdit(): void {
     this.exitEditMode();
+  }
+
+  protected prepareForExtension(announcementId: string): void {
+    const url = buildAnnouncementContextUrl(window.location.href, announcementId);
+    history.replaceState(history.state, '', url);
+    this.linkedAnnouncementId.set(announcementId);
+    this.extensionHandoffAnnouncementId.set(announcementId);
+  }
+
+  protected removeAnnouncement(announcementId: string): void {
+    if (this.isAnnouncementBusy(announcementId)) {
+      return;
+    }
+    this.setAnnouncementBusy(announcementId, true);
+    this.pageErrors.set([]);
+    this.announcementsService
+      .remove(announcementId)
+      .pipe(finalize(() => this.setAnnouncementBusy(announcementId, false)))
+      .subscribe({
+        next: () => {
+          this.announcements.update((current) =>
+            current.filter((announcement) => announcement.id !== announcementId),
+          );
+          if (this.editingAnnouncementId() === announcementId) {
+            this.exitEditMode();
+          }
+        },
+        error: (error: unknown) => this.pageErrors.set(extractErrorMessages(error)),
+      });
   }
 
   protected setChannelEnabled(announcementId: string, event: Event): void {
@@ -267,6 +298,10 @@ export class AppComponent implements OnInit {
     return this.busyAnnouncementIds().has(announcementId);
   }
 
+  protected isLinkedAnnouncement(announcementId: string): boolean {
+    return this.linkedAnnouncementId() === announcementId;
+  }
+
   private checkBackend(): void {
     this.healthService.check().subscribe({
       next: (health) => this.health.set(health),
@@ -373,4 +408,15 @@ function extractErrorMessages(error: unknown): readonly string[] {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+export function readAnnouncementIdFromUrl(url: string): string | null {
+  const announcementId = new URL(url).searchParams.get('announcementId')?.trim();
+  return announcementId ? announcementId : null;
+}
+
+export function buildAnnouncementContextUrl(currentUrl: string, announcementId: string): string {
+  const url = new URL(currentUrl);
+  url.searchParams.set('announcementId', announcementId);
+  return url.toString();
 }

@@ -1,0 +1,25 @@
+{
+  "name": "@marketplace-hub/extension",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs && node verify-dist.mjs",
+    "demo": "node demo/serve.mjs",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "pnpm type-check"
+  },
+  "dependencies": {
+    "@marketplace-hub/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "@types/node": "^22.10.7",
+    "esbuild": "^0.24.0",
+    "jsdom": "^25.0.1",
+    "typescript": "~5.8.0",
+    "vitest": "^2.1.8"
+  }
+}

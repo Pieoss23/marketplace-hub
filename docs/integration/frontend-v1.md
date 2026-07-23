@@ -13,6 +13,10 @@ La dashboard Angular implementa il flusso utente essenziale della V1 in una sing
 - avvio della pubblicazione mock;
 - visualizzazione dell’esito e degli errori strutturati;
 - caricamento dello storico indipendente delle pubblicazioni.
+- deep link opzionale `?announcementId=<id>` usato dall'estensione Chrome per
+  mettere in evidenza un annuncio già caricato dalla REST API.
+- azione esplicita “Usa nell'estensione”, che prepara lo stesso parametro nella
+  scheda attiva affinché il popup possa preselezionare l'annuncio.
 
 ## Confini
 

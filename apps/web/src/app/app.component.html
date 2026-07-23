@@ -137,7 +137,14 @@
     } @else {
       <div class="listing-grid">
         @for (announcement of announcements(); track announcement.id) {
-          <article class="listing-card">
+          <article
+            class="listing-card"
+            [class.linked-announcement]="isLinkedAnnouncement(announcement.id)"
+            [attr.id]="'announcement-' + announcement.id"
+          >
+            @if (isLinkedAnnouncement(announcement.id)) {
+              <p class="extension-context">Annuncio collegato all’estensione Chrome</p>
+            }
             <div class="listing-main">
               <div class="listing-meta">
                 <span class="status-pill" [class.failed]="announcement.status === 'DRAFT'">
@@ -154,14 +161,37 @@
                 {{ announcement.categoryCode }} · {{ announcement.condition }} · quantità
                 {{ announcement.quantity }}
               </p>
-              <button
-                class="text-action edit-action"
-                type="button"
-                [disabled]="isAnnouncementBusy(announcement.id)"
-                (click)="editAnnouncement(announcement)"
-              >
-                Modifica annuncio
-              </button>
+              <div class="card-actions">
+                <button
+                  class="text-action extension-action"
+                  type="button"
+                  [disabled]="isAnnouncementBusy(announcement.id)"
+                  (click)="prepareForExtension(announcement.id)"
+                >
+                  Usa nell’estensione
+                </button>
+                <button
+                  class="text-action edit-action"
+                  type="button"
+                  [disabled]="isAnnouncementBusy(announcement.id)"
+                  (click)="editAnnouncement(announcement)"
+                >
+                  Modifica annuncio
+                </button>
+                <button
+                  class="text-action delete-action"
+                  type="button"
+                  [disabled]="isAnnouncementBusy(announcement.id)"
+                  (click)="removeAnnouncement(announcement.id)"
+                >
+                  Elimina annuncio
+                </button>
+              </div>
+              @if (extensionHandoffAnnouncementId() === announcement.id) {
+                <p class="extension-handoff" role="status">
+                  Contesto pronto: apri l’estensione Chrome per trovare questo annuncio selezionato.
+                </p>
+              }
             </div>
 
             <div class="publish-box">

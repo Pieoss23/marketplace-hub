@@ -13,6 +13,23 @@ La V1 deve concentrarsi esclusivamente su:
 5. pubblicazione attraverso un connettore mock;
 6. salvataggio indipendente dello stato di ogni pubblicazione.
 
+## Esperimento di validazione: estensione Chrome
+
+È consentito sviluppare un MVP separato in `apps/extension` per validare il
+flusso di riutilizzo dell'annuncio centrale nel browser. L'esperimento deve:
+
+1. leggere gli annunci esclusivamente attraverso la REST API documentata;
+2. permettere all'utente di selezionare un annuncio;
+3. offrire azioni esplicite per copiare titolo, descrizione e prezzo;
+4. richiedere sempre un'azione consapevole dell'utente;
+5. essere verificabile inizialmente su una pagina form demo controllata dal
+   progetto, senza integrazioni con marketplace reali.
+
+La compilazione assistita di pagine reali è una fase successiva e richiede,
+per ogni sito, verifica dei termini applicabili, documentazione del relativo
+adattatore e approvazione esplicita del perimetro. L'estensione non deve mai
+inviare o pubblicare automaticamente un annuncio.
+
 Non implementare ancora:
 
 * inbox unificata;
@@ -23,6 +40,11 @@ Non implementare ancora:
 * browser automation;
 * integrazioni non documentate;
 * API reali di eBay, Subito, Vinted, Facebook o Wallapop.
+
+Il divieto di browser automation include click automatici, invio dei form,
+aggiramento di CAPTCHA o protezioni anti-bot e uso di selettori non documentati
+su marketplace reali. Non vieta il copia-incolla avviato dall'utente né i test
+di compilazione assistita eseguiti sulla pagina demo controllata dal progetto.
 
 ## Stack
 
@@ -44,6 +66,7 @@ Usare un monorepo con questa struttura:
 
 * `apps/api`: backend NestJS
 * `apps/web`: frontend Angular
+* `apps/extension`: estensione Chrome sperimentale per la validazione del flusso
 * `packages/domain`: dominio puro
 * `packages/contracts`: contratti API condivisi
 * `packages/connector-sdk`: interfacce e tipi dei connettori

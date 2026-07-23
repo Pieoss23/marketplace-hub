@@ -1,5 +1,11 @@
 export type { HealthResponse } from './health-response.js';
 export type {
+  AuthResponse,
+  LoginRequest,
+  PublicUserResponse,
+  SignupRequest,
+} from './auth.js';
+export type {
   CreateListingRequest,
   ListingImageDto,
   ListingResponse,

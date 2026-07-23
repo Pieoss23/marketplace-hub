@@ -54,6 +54,16 @@ export class AnnouncementsService {
     }
     return updated;
   }
+
+  async remove(id: string): Promise<void> {
+    const deleted = await this.repository.delete(id);
+    if (!deleted) {
+      throw AnnouncementApiException.notFound(
+        'ANNOUNCEMENT_NOT_FOUND',
+        `Announcement ${id} not found.`,
+      );
+    }
+  }
 }
 
 function buildCandidate(

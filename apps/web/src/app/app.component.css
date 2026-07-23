@@ -209,6 +209,29 @@ button:disabled {
   padding: 1.4rem;
   background: #fff;
 }
+
+.listing-card.linked-announcement {
+  outline: 3px solid #d97706;
+  outline-offset: 3px;
+  scroll-margin-block: 24px;
+}
+
+.extension-context {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #92400e;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.extension-handoff {
+  margin-top: 0.75rem;
+  color: #92400e;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
 .listing-main h3 {
   margin: 1.1rem 0 0.5rem;
   font-size: 1.45rem;
@@ -238,9 +261,13 @@ button:disabled {
   color: #315f4c;
   font-size: 1.35rem;
 }
-.edit-action {
-  display: block;
+.card-actions {
+  display: flex;
+  gap: 1rem;
   margin-top: 1rem;
+}
+.delete-action {
+  color: #a4463a;
 }
 .listing-submeta {
   margin-top: 0.35rem;

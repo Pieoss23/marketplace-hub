@@ -11,6 +11,7 @@ function buildRepository(): jest.Mocked<AnnouncementRepository> {
     findById: jest.fn(),
     update: jest.fn(),
     updateStatus: jest.fn(),
+    delete: jest.fn(),
     findChannel: jest.fn(),
     findChannels: jest.fn(),
     upsertChannel: jest.fn(),
@@ -133,5 +134,29 @@ describe('AnnouncementsService', () => {
     await expect(service.update('missing', validInput)).rejects.toBeInstanceOf(
       AnnouncementApiException,
     );
+  });
+
+  it('removes an existing announcement', async () => {
+    const repository = buildRepository();
+    repository.delete.mockResolvedValue(true);
+    const service = new AnnouncementsService(
+      repository,
+      new AnnouncementStatusCalculator(repository),
+    );
+
+    await service.remove('a1');
+
+    expect(repository.delete).toHaveBeenCalledWith('a1');
+  });
+
+  it('rejects removing a non-existent announcement', async () => {
+    const repository = buildRepository();
+    repository.delete.mockResolvedValue(false);
+    const service = new AnnouncementsService(
+      repository,
+      new AnnouncementStatusCalculator(repository),
+    );
+
+    await expect(service.remove('missing')).rejects.toBeInstanceOf(AnnouncementApiException);
   });
 });

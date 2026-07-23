@@ -15,6 +15,7 @@ function buildRepository(): jest.Mocked<AnnouncementRepository> {
     findById: jest.fn(),
     update: jest.fn(),
     updateStatus: jest.fn(),
+    delete: jest.fn(),
     findChannel: jest.fn(),
     findChannels: jest.fn(),
     upsertChannel: jest.fn(),
