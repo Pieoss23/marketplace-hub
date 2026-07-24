@@ -1,5 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import helmet from 'helmet';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 
@@ -13,6 +14,7 @@ describe('Health (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api');
+    app.use(helmet({ contentSecurityPolicy: false }));
     await app.init();
   });
 
@@ -28,5 +30,8 @@ describe('Health (e2e)', () => {
       service: 'marketplace-hub-api',
     });
     expect(typeof response.body.timestamp).toBe('string');
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+    expect(response.headers['x-frame-options']).toBe('SAMEORIGIN');
+    expect(response.headers['content-security-policy']).toBeUndefined();
   });
 });
