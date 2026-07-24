@@ -1,0 +1,95 @@
+<section class="create-panel" aria-labelledby="create-title">
+  <div class="section-heading">
+    <div>
+      <p class="step">01 · Annuncio centrale</p>
+      <h2 id="create-title">
+        {{ editingAnnouncement() ? 'Modifica inserzione' : 'Crea una nuova inserzione' }}
+      </h2>
+    </div>
+    <p>I dati restano indipendenti dai marketplace.</p>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <label class="field field-wide">
+      <span>Titolo</span>
+      <input formControlName="title" placeholder="Es. Tastiera meccanica vintage" />
+      @if (form.controls.title.touched && form.controls.title.invalid) {
+        <small>Inserisci un titolo (massimo 120 caratteri).</small>
+      }
+    </label>
+
+    <label class="field field-wide">
+      <span>Descrizione</span>
+      <textarea
+        formControlName="description"
+        rows="4"
+        placeholder="Condizioni, dettagli e ciò che rende unico l’oggetto"
+      ></textarea>
+      @if (form.controls.description.touched && form.controls.description.invalid) {
+        <small>Inserisci una descrizione (massimo 5.000 caratteri).</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Prezzo · Euro</span>
+      <input formControlName="priceEuros" type="number" min="0.01" step="0.01" />
+      @if (form.controls.priceEuros.touched && form.controls.priceEuros.invalid) {
+        <small>Inserisci un prezzo maggiore di zero, con massimo due decimali.</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Valuta</span>
+      <input formControlName="currency" readonly aria-readonly="true" />
+    </label>
+
+    <label class="field">
+      <span>Categoria</span>
+      <input formControlName="categoryCode" placeholder="electronics" />
+      @if (form.controls.categoryCode.touched && form.controls.categoryCode.invalid) {
+        <small>Inserisci una categoria (massimo 200 caratteri).</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Condizione</span>
+      <select formControlName="condition">
+        @for (option of conditions; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="field">
+      <span>Quantità</span>
+      <input formControlName="quantity" type="number" min="1" step="1" />
+      @if (form.controls.quantity.touched && form.controls.quantity.invalid) {
+        <small>Inserisci una quantità intera maggiore di zero.</small>
+      }
+    </label>
+
+    <div class="form-actions">
+      @if (editingAnnouncement()) {
+        <button
+          class="secondary-action"
+          type="button"
+          [disabled]="submitting()"
+          (click)="editCancelled.emit()"
+        >
+          Annulla
+        </button>
+      }
+      <button class="primary-action" type="submit" [disabled]="submitting()">
+        {{
+          submitting()
+            ? editingAnnouncement()
+              ? 'Aggiornamento…'
+              : 'Salvataggio…'
+            : editingAnnouncement()
+              ? 'Aggiorna annuncio'
+              : 'Salva annuncio'
+        }}
+      </button>
+    </div>
+  </form>
+</section>

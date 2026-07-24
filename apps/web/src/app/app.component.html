@@ -21,113 +21,12 @@
     </section>
   }
 
-  <section class="create-panel" aria-labelledby="create-title">
-    <div class="section-heading">
-      <div>
-        <p class="step">01 · Annuncio centrale</p>
-        <h2 id="create-title">
-          {{ isEditing() ? 'Modifica inserzione' : 'Crea una nuova inserzione' }}
-        </h2>
-      </div>
-      <p>I dati restano indipendenti dai marketplace.</p>
-    </div>
-
-    <form [formGroup]="announcementForm" (ngSubmit)="submitAnnouncement()">
-      <label class="field field-wide">
-        <span>Titolo</span>
-        <input formControlName="title" placeholder="Es. Tastiera meccanica vintage" />
-        @if (announcementForm.controls.title.touched && announcementForm.controls.title.invalid) {
-          <small>Inserisci un titolo (massimo 120 caratteri).</small>
-        }
-      </label>
-
-      <label class="field field-wide">
-        <span>Descrizione</span>
-        <textarea
-          formControlName="description"
-          rows="4"
-          placeholder="Condizioni, dettagli e ciò che rende unico l’oggetto"
-        ></textarea>
-        @if (
-          announcementForm.controls.description.touched &&
-          announcementForm.controls.description.invalid
-        ) {
-          <small>Inserisci una descrizione (massimo 5.000 caratteri).</small>
-        }
-      </label>
-
-      <label class="field">
-        <span>Prezzo · Euro</span>
-        <input formControlName="priceEuros" type="number" min="0.01" step="0.01" />
-        @if (
-          announcementForm.controls.priceEuros.touched &&
-          announcementForm.controls.priceEuros.invalid
-        ) {
-          <small>Inserisci un prezzo maggiore di zero, con massimo due decimali.</small>
-        }
-      </label>
-
-      <label class="field">
-        <span>Valuta</span>
-        <input formControlName="currency" readonly aria-readonly="true" />
-      </label>
-
-      <label class="field">
-        <span>Categoria</span>
-        <input formControlName="categoryCode" placeholder="electronics" />
-        @if (
-          announcementForm.controls.categoryCode.touched &&
-          announcementForm.controls.categoryCode.invalid
-        ) {
-          <small>Inserisci una categoria (massimo 200 caratteri).</small>
-        }
-      </label>
-
-      <label class="field">
-        <span>Condizione</span>
-        <select formControlName="condition">
-          @for (option of conditions; track option.value) {
-            <option [value]="option.value">{{ option.label }}</option>
-          }
-        </select>
-      </label>
-
-      <label class="field">
-        <span>Quantità</span>
-        <input formControlName="quantity" type="number" min="1" step="1" />
-        @if (
-          announcementForm.controls.quantity.touched &&
-          announcementForm.controls.quantity.invalid
-        ) {
-          <small>Inserisci una quantità intera maggiore di zero.</small>
-        }
-      </label>
-
-      <div class="form-actions">
-        @if (isEditing()) {
-          <button
-            class="secondary-action"
-            type="button"
-            [disabled]="isSubmitting()"
-            (click)="cancelEdit()"
-          >
-            Annulla
-          </button>
-        }
-        <button class="primary-action" type="submit" [disabled]="isSubmitting()">
-          {{
-            isSubmitting()
-              ? isEditing()
-                ? 'Aggiornamento…'
-                : 'Salvataggio…'
-              : isEditing()
-                ? 'Aggiorna annuncio'
-                : 'Salva annuncio'
-          }}
-        </button>
-      </div>
-    </form>
-  </section>
+  <app-announcement-form
+    [editingAnnouncement]="editingAnnouncement()"
+    [submitting]="isSubmitting()"
+    (submitted)="submitAnnouncement($event)"
+    (editCancelled)="cancelEdit()"
+  />
 
   <section class="listings-panel" aria-labelledby="listings-title">
     <div class="section-heading">

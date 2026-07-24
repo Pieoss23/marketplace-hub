@@ -33,10 +33,12 @@ Non sono presenti upload di file, marketplace reali, inbox, AI o automazione bro
 
 ## Struttura della pagina
 
-`AppComponent` orchestra caricamento, filtri e chiamate REST. Ogni annuncio è
-renderizzato da `AnnouncementCardComponent`, che riceve stato e risultati come
-input ed emette azioni esplicite per modifica, eliminazione, configurazione,
-validazione e pubblicazione. La scheda non accede direttamente ai servizi HTTP.
+`AppComponent` orchestra caricamento, filtri e chiamate REST.
+`AnnouncementFormComponent` possiede il form reattivo, applica i vincoli locali
+e produce richieste normalizzate senza accedere ai servizi HTTP. Ogni annuncio
+è renderizzato da `AnnouncementCardComponent`, che riceve stato e risultati
+come input ed emette azioni esplicite per modifica, eliminazione,
+configurazione, validazione e pubblicazione.
 
 ## Sviluppo locale
 

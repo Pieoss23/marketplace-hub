@@ -7,7 +7,6 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import type {
   AnnouncementResponse,
   ChannelValidationResponse,
@@ -22,6 +21,7 @@ import {
   AnnouncementCardComponent,
   type AnnouncementChannelDraft,
 } from './announcement-card.component';
+import { AnnouncementFormComponent } from './announcement-form.component';
 import {
   AnnouncementSummaryComponent,
   type AnnouncementStatusFilter,
@@ -30,44 +30,18 @@ import { HealthService } from './health.service';
 
 const MOCK_CONNECTOR_CODE = 'mock';
 
-type Condition = CreateAnnouncementRequest['condition'];
-
-const CONDITIONS: ReadonlyArray<{ value: Condition; label: string }> = [
-  { value: 'NEW', label: 'Nuovo' },
-  { value: 'LIKE_NEW', label: 'Come nuovo' },
-  { value: 'USED_GOOD', label: 'Usato - buono stato' },
-  { value: 'USED_ACCEPTABLE', label: 'Usato - stato accettabile' },
-  { value: 'FOR_PARTS', label: 'Per ricambi' },
-];
-
 const EMPTY_CHANNEL_DRAFT: AnnouncementChannelDraft = { enabled: false, category: '' };
 
 @Component({
   selector: 'app-root',
-  imports: [AnnouncementCardComponent, AnnouncementSummaryComponent, ReactiveFormsModule],
+  imports: [AnnouncementCardComponent, AnnouncementFormComponent, AnnouncementSummaryComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent implements OnInit {
-  protected readonly conditions = CONDITIONS;
-
-  private readonly formBuilder = inject(FormBuilder);
   private readonly healthService = inject(HealthService);
   private readonly announcementsService = inject(AnnouncementsService);
-
-  protected readonly announcementForm = this.formBuilder.nonNullable.group({
-    title: ['', [Validators.required, Validators.maxLength(120)]],
-    description: ['', [Validators.required, Validators.maxLength(5000)]],
-    priceEuros: [
-      0,
-      [Validators.required, Validators.min(0.01), Validators.pattern(/^\d+(\.\d{1,2})?$/)],
-    ],
-    currency: ['EUR', [Validators.required, Validators.maxLength(3)]],
-    categoryCode: ['', [Validators.required, Validators.maxLength(200)]],
-    condition: ['USED_GOOD' as Condition, [Validators.required]],
-    quantity: [1, [Validators.required, Validators.min(1), Validators.pattern(/^\d+$/)]],
-  });
 
   protected readonly health = signal<HealthResponse | null>(null);
   protected readonly announcements = signal<readonly AnnouncementResponse[]>([]);
@@ -91,7 +65,12 @@ export class AppComponent implements OnInit {
   protected readonly extensionHandoffAnnouncementId = signal<string | null>(null);
   protected readonly busyAnnouncementIds = signal<ReadonlySet<string>>(new Set());
 
-  protected readonly isEditing = computed(() => this.editingAnnouncementId() !== null);
+  protected readonly editingAnnouncement = computed(() => {
+    const editingId = this.editingAnnouncementId();
+    return editingId
+      ? this.announcements().find((announcement) => announcement.id === editingId)
+      : undefined;
+  });
   protected readonly filteredAnnouncements = computed(() =>
     filterAnnouncements(
       this.announcements(),
@@ -105,22 +84,10 @@ export class AppComponent implements OnInit {
     this.loadAnnouncements();
   }
 
-  protected submitAnnouncement(): void {
-    this.announcementForm.markAllAsTouched();
-    if (this.announcementForm.invalid || this.isSubmitting()) {
+  protected submitAnnouncement(request: CreateAnnouncementRequest): void {
+    if (this.isSubmitting()) {
       return;
     }
-
-    const value = this.announcementForm.getRawValue();
-    const request: CreateAnnouncementRequest = {
-      title: value.title.trim(),
-      description: value.description.trim(),
-      priceAmount: Math.round(value.priceEuros * 100),
-      currency: value.currency.trim().toUpperCase(),
-      categoryCode: value.categoryCode.trim(),
-      condition: value.condition,
-      quantity: value.quantity,
-    };
 
     const editingId = this.editingAnnouncementId();
     this.isSubmitting.set(true);
@@ -145,15 +112,6 @@ export class AppComponent implements OnInit {
     }
     this.pageErrors.set([]);
     this.editingAnnouncementId.set(announcement.id);
-    this.announcementForm.reset({
-      title: announcement.title,
-      description: announcement.description,
-      priceEuros: announcement.price / 100,
-      currency: announcement.currency,
-      categoryCode: announcement.categoryCode,
-      condition: announcement.condition,
-      quantity: announcement.quantity,
-    });
   }
 
   protected cancelEdit(): void {
@@ -386,15 +344,6 @@ export class AppComponent implements OnInit {
 
   private exitEditMode(): void {
     this.editingAnnouncementId.set(null);
-    this.announcementForm.reset({
-      title: '',
-      description: '',
-      priceEuros: 0,
-      currency: 'EUR',
-      categoryCode: '',
-      condition: 'USED_GOOD',
-      quantity: 1,
-    });
   }
 
   private setAnnouncementBusy(announcementId: string, busy: boolean): void {
