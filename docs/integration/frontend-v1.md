@@ -14,7 +14,8 @@ La dashboard Angular implementa il flusso utente essenziale della V1 in una sing
   filtro della dashboard;
 - creazione di un annuncio con titolo, descrizione, prezzo positivo in EUR,
   categoria, condizione e quantità; i vincoli sono verificati localmente prima
-  dell'invio e restano validati nuovamente dall'API;
+  dell'invio e restano validati nuovamente dall'API (massimo due decimali per
+  il prezzo, categoria entro 200 caratteri e quantità intera positiva);
 - modifica inline di titolo, descrizione e prezzo dell'annuncio centrale;
 - eliminazione di un annuncio con conferma esplicita e annullamento;
 - configurazione della categoria per il solo marketplace `mock`;

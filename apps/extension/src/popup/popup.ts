@@ -26,7 +26,7 @@ function requiredElement<T extends Element>(selector: string): T {
   return element;
 }
 
-function sendFillDemoFormMessage(message: FillDemoFormMessage): Promise<boolean> {
+function sendFillDemoFormMessage(message: FillDemoFormMessage): Promise<FillDemoFormResponse> {
   return new Promise((resolve, reject) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const queryError = chrome.runtime.lastError;
@@ -37,17 +37,17 @@ function sendFillDemoFormMessage(message: FillDemoFormMessage): Promise<boolean>
 
       const tabId = tabs[0]?.id;
       if (tabId === undefined) {
-        resolve(false);
+        resolve({ applied: false, matchedFields: [] });
         return;
       }
 
       chrome.tabs.sendMessage(tabId, message, (response: FillDemoFormResponse | undefined) => {
         const sendError = chrome.runtime.lastError;
         if (sendError) {
-          resolve(false);
+          resolve({ applied: false, matchedFields: [] });
           return;
         }
-        resolve(response?.applied === true);
+        resolve(response ?? { applied: false, matchedFields: [] });
       });
     });
   });

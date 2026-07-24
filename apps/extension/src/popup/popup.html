@@ -7,42 +7,62 @@
   </head>
   <body>
     <main>
-      <h1>Copia annuncio</h1>
-
-      <section class="auth-section">
-        <div class="list-header">
-          <strong>Account Marketplace Hub</strong>
-          <button id="logout" type="button" hidden>Esci</button>
+      <header class="popup-header">
+        <div class="brand-mark" aria-hidden="true">M</div>
+        <div>
+          <p class="eyebrow">Marketplace Hub</p>
+          <h1>Copia annuncio</h1>
+          <p class="tagline">Un annuncio. Pronto ovunque.</p>
         </div>
-        <p id="auth-status" role="status">Non autenticato</p>
+      </header>
+
+      <section class="panel auth-section">
+        <div class="list-header">
+          <div>
+            <p class="step">01 · Account</p>
+            <strong>Sessione Marketplace Hub</strong>
+          </div>
+          <button id="logout" class="text-action" type="button" hidden>Esci</button>
+        </div>
+        <p id="auth-status" class="status-pill" role="status">Non autenticato</p>
         <div id="login-form">
           <label for="login-email">Email</label>
           <input id="login-email" type="email" autocomplete="username" />
           <label for="login-password">Password</label>
           <input id="login-password" type="password" autocomplete="current-password" />
-          <button id="login" type="button">Accedi</button>
-          <button id="open-signup" type="button">Crea account nella web app</button>
+          <button id="login" class="primary-action" type="button">Accedi</button>
+          <button id="open-signup" class="secondary-action" type="button">
+            Crea account nella web app
+          </button>
           <small>La password non viene salvata dall’estensione.</small>
         </div>
       </section>
 
-      <section class="settings">
+      <section class="panel settings">
+        <p class="step">02 · Collegamenti</p>
         <label for="api-base-url">URL API</label>
         <div class="settings-row">
           <input id="api-base-url" type="text" spellcheck="false" />
-          <button id="save-api-base-url" type="button">Salva</button>
+          <button id="save-api-base-url" class="secondary-action compact-action" type="button">
+            Salva
+          </button>
         </div>
         <label for="web-app-base-url">URL web app</label>
         <div class="settings-row">
           <input id="web-app-base-url" type="text" spellcheck="false" />
-          <button id="save-web-app-base-url" type="button">Salva</button>
+          <button id="save-web-app-base-url" class="secondary-action compact-action" type="button">
+            Salva
+          </button>
         </div>
       </section>
 
-      <section class="list-section">
+      <section class="panel list-section">
         <div class="list-header">
-          <span>Annunci</span>
-          <button id="refresh" type="button">Aggiorna</button>
+          <div>
+            <p class="step">03 · Annuncio centrale</p>
+            <strong>Seleziona un annuncio</strong>
+          </div>
+          <button id="refresh" class="text-action" type="button">Aggiorna</button>
         </div>
         <p id="status" role="status"></p>
         <label for="announcement-search">Cerca annunci</label>
@@ -54,13 +74,27 @@
         <select id="announcement-select" size="6"></select>
       </section>
 
-      <section class="actions" id="actions" hidden>
-        <button id="copy-title" type="button">Copia titolo</button>
-        <button id="copy-description" type="button">Copia descrizione</button>
-        <button id="copy-price" type="button">Copia prezzo</button>
-        <button id="copy-summary" type="button">Copia riepilogo completo</button>
-        <button id="open-in-web-app" type="button">Apri nella web app</button>
-        <button id="fill-demo-form" type="button">Compila pagina form demo</button>
+      <section class="panel actions" id="actions" hidden>
+        <div>
+          <p class="step">04 · Azioni esplicite</p>
+          <strong>Riutilizza i dati</strong>
+        </div>
+        <div class="action-grid">
+          <button id="copy-title" class="secondary-action" type="button">Copia titolo</button>
+          <button id="copy-price" class="secondary-action" type="button">Copia prezzo</button>
+          <button id="copy-description" class="secondary-action wide-action" type="button">
+            Copia descrizione
+          </button>
+          <button id="copy-summary" class="primary-action wide-action" type="button">
+            Copia riepilogo completo
+          </button>
+          <button id="open-in-web-app" class="secondary-action wide-action" type="button">
+            Apri nella web app
+          </button>
+          <button id="fill-demo-form" class="demo-action wide-action" type="button">
+            Rileva e compila pagina demo
+          </button>
+        </div>
       </section>
 
       <p id="feedback" role="status"></p>

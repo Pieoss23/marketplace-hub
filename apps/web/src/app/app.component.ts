@@ -59,11 +59,14 @@ export class AppComponent implements OnInit {
   protected readonly announcementForm = this.formBuilder.nonNullable.group({
     title: ['', [Validators.required, Validators.maxLength(120)]],
     description: ['', [Validators.required, Validators.maxLength(5000)]],
-    priceEuros: [0, [Validators.required, Validators.min(0.01)]],
+    priceEuros: [
+      0,
+      [Validators.required, Validators.min(0.01), Validators.pattern(/^\d+(\.\d{1,2})?$/)],
+    ],
     currency: ['EUR', [Validators.required, Validators.maxLength(3)]],
-    categoryCode: ['', [Validators.required]],
+    categoryCode: ['', [Validators.required, Validators.maxLength(200)]],
     condition: ['USED_GOOD' as Condition, [Validators.required]],
-    quantity: [1, [Validators.required, Validators.min(1)]],
+    quantity: [1, [Validators.required, Validators.min(1), Validators.pattern(/^\d+$/)]],
   });
 
   protected readonly health = signal<HealthResponse | null>(null);

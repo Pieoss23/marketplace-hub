@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <title>Pagina demo semantica — Marketplace Hub</title>
+    <style>
+      body {
+        max-width: 480px;
+        margin: 40px auto;
+        font-family: system-ui, sans-serif;
+      }
+      label {
+        display: block;
+        margin-top: 12px;
+        font-weight: 600;
+      }
+      input,
+      textarea {
+        box-sizing: border-box;
+        width: 100%;
+        margin-top: 4px;
+        padding: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Form demo semantico</h1>
+    <p>
+      I campi sono riordinati e non usano gli ID della demo principale. La
+      pagina non contiene un pulsante di invio.
+    </p>
+    <form>
+      <label>
+        Costo richiesto
+        <input name="listing-amount" type="number" min="0" step="0.01" />
+      </label>
+
+      <label>
+        Testo annuncio
+        <textarea name="body-copy" rows="4"></textarea>
+      </label>
+
+      <label>
+        Oggetto
+        <input name="headline" type="text" />
+      </label>
+    </form>
+  </body>
+</html>

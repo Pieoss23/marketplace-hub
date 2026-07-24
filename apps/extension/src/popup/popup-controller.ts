@@ -7,7 +7,12 @@ import type {
 } from '@marketplace-hub/contracts';
 
 import { ApiRequestError } from '../lib/api-client';
-import { buildFillMessage, type FillDemoFormMessage } from '../lib/fill-message';
+import {
+  buildFillMessage,
+  type FillField,
+  type FillDemoFormMessage,
+  type FillDemoFormResult,
+} from '../lib/fill-message';
 import { buildSummary, formatPriceEuros } from '../lib/format';
 
 export interface PopupElements {
@@ -41,7 +46,7 @@ export interface PopupDependencies {
   readonly refreshSession: (apiBaseUrl: string, request: RefreshRequest) => Promise<AuthResponse>;
   readonly logout: (apiBaseUrl: string, request: LogoutRequest) => Promise<void>;
   readonly writeClipboard: (text: string) => Promise<void>;
-  readonly fillDemoForm: (message: FillDemoFormMessage) => Promise<boolean>;
+  readonly fillDemoForm: (message: FillDemoFormMessage) => Promise<FillDemoFormResult>;
   readonly openWebApp: (url: string) => Promise<void>;
   readonly getActiveTabUrl: () => Promise<string | undefined>;
   readonly ensureApiOriginPermission: (apiBaseUrl: string) => Promise<boolean>;
@@ -54,6 +59,12 @@ const COPY_FEEDBACK: Readonly<Record<CopyTarget, string>> = {
   description: 'Descrizione copiata.',
   price: 'Prezzo copiato.',
   summary: 'Riepilogo copiato.',
+};
+
+const FILL_FIELD_LABELS: Readonly<Record<FillField, string>> = {
+  title: 'titolo',
+  description: 'descrizione',
+  price: 'prezzo',
 };
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -287,10 +298,13 @@ export class PopupController {
     }
 
     try {
-      const applied = await this.dependencies.fillDemoForm(buildFillMessage(announcement));
-      this.elements.feedback.textContent = applied
-        ? 'Form demo compilato.'
-        : 'Impossibile compilare il form: apri la pagina demo del progetto nella scheda attiva.';
+      const result = await this.dependencies.fillDemoForm(buildFillMessage(announcement));
+      const matchedFields = result.matchedFields.map((field) => FILL_FIELD_LABELS[field]).join(', ');
+      this.elements.feedback.textContent = result.applied
+        ? `Form demo compilato. Campi riconosciuti: ${matchedFields}.`
+        : matchedFields
+          ? `Compilazione annullata. Campi riconosciuti: ${matchedFields}.`
+          : 'Impossibile compilare il form: apri la pagina demo del progetto nella scheda attiva.';
     } catch (error) {
       this.elements.feedback.textContent = errorMessage(
         error,

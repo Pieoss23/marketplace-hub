@@ -32,6 +32,18 @@ dallo storage Angular; dal popup si può aprire la registrazione nella web app.
   coperte da test unitari.
 - `demo/` — pagina form demo statica e piccolo server locale per servirla.
 
+La pagina `http://localhost:4300/semantic.html` offre una seconda variante
+controllata: i campi sono riordinati e non usano gli ID della demo principale.
+L'azione “Rileva e compila pagina demo” li associa tramite label, nome,
+placeholder e tipo del controllo; se manca anche un solo campo richiesto non
+applica modifiche parziali e indica nel popup quelli riconosciuti.
+
+Il popup riprende l'identità visiva della dashboard (palette crema, verde e
+lime, pannelli arrotondati, gerarchia tipografica e stati di focus coerenti)
+in un layout compatto da 370 px. La somiglianza è solo visiva: l'estensione
+mantiene il proprio sottoinsieme essenziale di funzioni e non replica i flussi
+gestionali avanzati della web app.
+
 ## Build
 
 ```bash
@@ -91,9 +103,10 @@ permessi minimi).
 6. Seleziona un annuncio e prova, uno alla volta: "Copia titolo", "Copia
    descrizione", "Copia prezzo", "Copia riepilogo completo" — incolla altrove
    per verificare il contenuto copiato.
-7. Con la scheda della pagina demo attiva, premi "Compila pagina form demo":
+7. Con la scheda della pagina demo attiva, premi "Rileva e compila pagina demo":
    verifica che titolo, descrizione e prezzo vengano popolati nel form della
-   pagina demo.
+   pagina demo. Ripeti su `http://localhost:4300/semantic.html` per verificare
+   il riconoscimento con campi riordinati e rinominati.
 8. Prova il caso di errore: chiudi il backend o inserisci un URL API errato e
    verifica che il popup mostri un messaggio di errore comprensibile invece di
    fallire silenziosamente.

@@ -5,6 +5,7 @@ import {
   FILL_DEMO_FORM_MESSAGE,
   applyFillToDocument,
   buildFillMessage,
+  detectDemoFormFields,
   handleFillDemoFormMessage,
   isFillDemoFormMessage,
 } from '../src/lib/fill-message';
@@ -29,6 +30,7 @@ describe('buildFillMessage', () => {
     const message = buildFillMessage(announcement);
     expect(message).toEqual({
       type: FILL_DEMO_FORM_MESSAGE,
+      priceAmount: 7500,
       fields: {
         title: 'Mechanical keyboard',
         description: 'Used mechanical keyboard in good condition.',
@@ -54,12 +56,14 @@ describe('isFillDemoFormMessage', () => {
     expect(
       isFillDemoFormMessage({
         type: FILL_DEMO_FORM_MESSAGE,
+        priceAmount: 7500,
         fields: null,
       }),
     ).toBe(false);
     expect(
       isFillDemoFormMessage({
         type: FILL_DEMO_FORM_MESSAGE,
+        priceAmount: 7500,
         fields: {
           title: 'Mechanical keyboard',
           description: 'Used mechanical keyboard in good condition.',
@@ -88,7 +92,10 @@ describe('applyFillToDocument', () => {
 
     const applied = applyFillToDocument(doc, message);
 
-    expect(applied).toBe(true);
+    expect(applied).toEqual({
+      applied: true,
+      matchedFields: ['title', 'description', 'price'],
+    });
     expect((doc.querySelector('#demo-title') as HTMLInputElement).value).toBe('Mechanical keyboard');
     expect((doc.querySelector('#demo-description') as HTMLTextAreaElement).value).toBe(
       'Used mechanical keyboard in good condition.',
@@ -100,7 +107,74 @@ describe('applyFillToDocument', () => {
     document.body.innerHTML = '<p>Not the demo page</p>';
     const message = buildFillMessage(announcement);
 
-    expect(applyFillToDocument(document, message)).toBe(false);
+    expect(applyFillToDocument(document, message)).toEqual({
+      applied: false,
+      matchedFields: [],
+    });
+  });
+
+  it('recognizes reordered fields from semantic labels without known ids', () => {
+    document.body.innerHTML = `
+      <form>
+        <label>Costo richiesto <input name="listing-amount" type="number" /></label>
+        <label>Testo annuncio <textarea name="body-copy"></textarea></label>
+        <label>Oggetto <input name="headline" /></label>
+        <label>Email <input name="contact" type="email" /></label>
+      </form>
+    `;
+
+    const result = applyFillToDocument(document, buildFillMessage(announcement));
+
+    expect(result).toEqual({
+      applied: true,
+      matchedFields: ['title', 'description', 'price'],
+    });
+    expect((document.querySelector('[name="headline"]') as HTMLInputElement).value).toBe(
+      announcement.title,
+    );
+    expect((document.querySelector('[name="body-copy"]') as HTMLTextAreaElement).value).toBe(
+      announcement.description,
+    );
+    expect((document.querySelector('[name="listing-amount"]') as HTMLInputElement).value).toBe(
+      '75',
+    );
+  });
+
+  it('does not partially fill when a required semantic field is missing', () => {
+    document.body.innerHTML = `
+      <form>
+        <label>Titolo <input name="headline" value="Existing title" /></label>
+        <label>Prezzo <input name="amount" value="10" /></label>
+      </form>
+    `;
+
+    const result = applyFillToDocument(document, buildFillMessage(announcement));
+
+    expect(result).toEqual({
+      applied: false,
+      matchedFields: ['title', 'price'],
+    });
+    expect((document.querySelector('[name="headline"]') as HTMLInputElement).value).toBe(
+      'Existing title',
+    );
+    expect((document.querySelector('[name="amount"]') as HTMLInputElement).value).toBe('10');
+  });
+});
+
+describe('detectDemoFormFields', () => {
+  it('ignores disabled, readonly and credential controls', () => {
+    document.body.innerHTML = `
+      <label>Titolo <input name="title" readonly /></label>
+      <label>Descrizione <textarea name="description"></textarea></label>
+      <label>Prezzo <input name="price" disabled /></label>
+      <label>Password titolo <input name="password-title" type="password" /></label>
+    `;
+
+    const detected = detectDemoFormFields(document);
+
+    expect(detected.title).toBeUndefined();
+    expect(detected.description).toBeInstanceOf(HTMLTextAreaElement);
+    expect(detected.price).toBeUndefined();
   });
 });
 
@@ -125,7 +199,9 @@ describe('handleFillDemoFormMessage', () => {
     });
 
     expect(handled).toBe(true);
-    expect(responses).toEqual([{ applied: true }]);
+    expect(responses).toEqual([
+      { applied: true, matchedFields: ['title', 'description', 'price'] },
+    ]);
     expect((doc.querySelector('#demo-title') as HTMLInputElement).value).toBe(
       'Mechanical keyboard',
     );
@@ -144,7 +220,7 @@ describe('handleFillDemoFormMessage', () => {
     );
 
     expect(handled).toBe(true);
-    expect(responses).toEqual([{ applied: false }]);
+    expect(responses).toEqual([{ applied: false, matchedFields: [] }]);
   });
 
   it('ignores malformed messages without changing the DOM or responding', () => {
@@ -157,6 +233,7 @@ describe('handleFillDemoFormMessage', () => {
       doc,
       {
         type: FILL_DEMO_FORM_MESSAGE,
+        priceAmount: 7500,
         fields: {
           title: 'Replacement',
           description: 'Description',

@@ -86,7 +86,10 @@ function createDependencies(overrides: Partial<PopupDependencies> = {}): PopupDe
     refreshSession: vi.fn().mockResolvedValue(authSession),
     logout: vi.fn().mockResolvedValue(undefined),
     writeClipboard: vi.fn().mockResolvedValue(undefined),
-    fillDemoForm: vi.fn().mockResolvedValue(true),
+    fillDemoForm: vi.fn().mockResolvedValue({
+      applied: true,
+      matchedFields: ['title', 'description', 'price'],
+    }),
     openWebApp: vi.fn().mockResolvedValue(undefined),
     getActiveTabUrl: vi.fn().mockResolvedValue(undefined),
     ensureApiOriginPermission: vi.fn().mockResolvedValue(true),
@@ -411,7 +414,9 @@ describe('PopupController', () => {
     expect(dependencies.fillDemoForm).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'FILL_DEMO_FORM' }),
     );
-    expect(elements.feedback.textContent).toBe('Form demo compilato.');
+    expect(elements.feedback.textContent).toBe(
+      'Form demo compilato. Campi riconosciuti: titolo, descrizione, prezzo.',
+    );
   });
 
   it('opens the selected announcement in the configured web app', async () => {
@@ -432,7 +437,9 @@ describe('PopupController', () => {
     const elements = createElements();
     const controller = new PopupController(
       elements,
-      createDependencies({ fillDemoForm: vi.fn().mockResolvedValue(false) }),
+      createDependencies({
+        fillDemoForm: vi.fn().mockResolvedValue({ applied: false, matchedFields: [] }),
+      }),
     );
     await controller.initialize();
 

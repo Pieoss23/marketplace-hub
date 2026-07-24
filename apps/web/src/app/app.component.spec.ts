@@ -129,7 +129,50 @@ describe('AppComponent', () => {
 
     httpTesting.expectNone('/api/announcements');
     expect(fixture.nativeElement.textContent).toContain(
-      'Inserisci un prezzo maggiore di zero.',
+      'Inserisci un prezzo maggiore di zero, con massimo due decimali.',
+    );
+  });
+
+  it('blocks prices with more than two decimal places before contacting the API', () => {
+    flushInitialRequests([]);
+    fixture.detectChanges();
+    fillRequiredAnnouncementFields();
+    setInput('input[formControlName="priceEuros"]', '10.999');
+
+    submitAnnouncementForm();
+    fixture.detectChanges();
+
+    httpTesting.expectNone('/api/announcements');
+    expect(fixture.nativeElement.textContent).toContain('con massimo due decimali');
+  });
+
+  it('blocks fractional quantities before contacting the API', () => {
+    flushInitialRequests([]);
+    fixture.detectChanges();
+    fillRequiredAnnouncementFields();
+    setInput('input[formControlName="quantity"]', '1.5');
+
+    submitAnnouncementForm();
+    fixture.detectChanges();
+
+    httpTesting.expectNone('/api/announcements');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Inserisci una quantità intera maggiore di zero.',
+    );
+  });
+
+  it('blocks categories longer than the API limit before contacting the API', () => {
+    flushInitialRequests([]);
+    fixture.detectChanges();
+    fillRequiredAnnouncementFields();
+    setInput('input[formControlName="categoryCode"]', 'a'.repeat(201));
+
+    submitAnnouncementForm();
+    fixture.detectChanges();
+
+    httpTesting.expectNone('/api/announcements');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Inserisci una categoria (massimo 200 caratteri).',
     );
   });
 
@@ -468,6 +511,19 @@ describe('AppComponent', () => {
     const input = fixture.nativeElement.querySelector(selector) as HTMLInputElement;
     input.value = value;
     input.dispatchEvent(new Event('input'));
+  }
+
+  function fillRequiredAnnouncementFields(): void {
+    setInput('input[formControlName="title"]', 'Mechanical keyboard');
+    setInput('textarea[formControlName="description"]', 'Used mechanical keyboard');
+    setInput('input[formControlName="priceEuros"]', '75');
+    setInput('input[formControlName="categoryCode"]', 'electronics');
+  }
+
+  function submitAnnouncementForm(): void {
+    (fixture.nativeElement.querySelector('form') as HTMLFormElement).dispatchEvent(
+      new Event('submit'),
+    );
   }
 });
 

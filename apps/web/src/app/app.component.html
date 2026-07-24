@@ -63,7 +63,7 @@
           announcementForm.controls.priceEuros.touched &&
           announcementForm.controls.priceEuros.invalid
         ) {
-          <small>Inserisci un prezzo maggiore di zero.</small>
+          <small>Inserisci un prezzo maggiore di zero, con massimo due decimali.</small>
         }
       </label>
 
@@ -79,7 +79,7 @@
           announcementForm.controls.categoryCode.touched &&
           announcementForm.controls.categoryCode.invalid
         ) {
-          <small>Inserisci una categoria.</small>
+          <small>Inserisci una categoria (massimo 200 caratteri).</small>
         }
       </label>
 
@@ -95,6 +95,12 @@
       <label class="field">
         <span>Quantità</span>
         <input formControlName="quantity" type="number" min="1" step="1" />
+        @if (
+          announcementForm.controls.quantity.touched &&
+          announcementForm.controls.quantity.invalid
+        ) {
+          <small>Inserisci una quantità intera maggiore di zero.</small>
+        }
       </label>
 
       <div class="form-actions">

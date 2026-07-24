@@ -95,6 +95,8 @@ L'esperimento sarà considerato verificabile quando saranno disponibili:
 - pagina form demo con campi noti;
 - test unitari per mapping e formattazione dei dati;
 - test del messaggio tra popup e pagina demo;
+- riconoscimento semantico di titolo, descrizione e prezzo su una variante
+  controllata con campi riordinati e rinominati, senza compilazione parziale;
 - checklist manuale per caricamento in Chrome e prova end-to-end.
 
 Qualsiasi adattatore futuro deve restare separato dal modello centrale e non può
