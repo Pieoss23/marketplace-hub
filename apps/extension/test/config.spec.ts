@@ -48,13 +48,18 @@ describe('extension configuration', () => {
     await setApiBaseUrl('  http://localhost:3100/api  ');
     await setWebAppBaseUrl('  http://localhost:4200  ');
 
-    expect(set).toHaveBeenNthCalledWith(1, { apiBaseUrl: 'http://localhost:3100/api' });
-    expect(set).toHaveBeenNthCalledWith(2, { webAppBaseUrl: 'http://localhost:4200' });
+    expect(set).toHaveBeenNthCalledWith(1, {
+      apiBaseUrl: 'http://localhost:3100/api',
+    });
+    expect(set).toHaveBeenNthCalledWith(2, {
+      webAppBaseUrl: 'http://localhost:4200',
+    });
   });
 
   it('persists and clears a validated extension session without a password', async () => {
     const session = {
       accessToken: 'signed-token',
+      refreshToken: 'opaque-refresh-token',
       user: { id: 'user-1', email: 'user@example.com' },
     };
     get.mockResolvedValue({ authSession: session });

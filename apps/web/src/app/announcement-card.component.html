@@ -1,0 +1,207 @@
+<article
+  class="listing-card"
+  [class.linked-announcement]="linked()"
+  [attr.id]="'announcement-' + announcement().id"
+>
+  @if (linked()) {
+    <p class="extension-context">Annuncio collegato all’estensione Chrome</p>
+  }
+  <div class="listing-main">
+    <div class="listing-meta">
+      <span class="status-pill" [class.failed]="announcement().status === 'DRAFT'">
+        {{ announcementStatusLabel(announcement().status) }}
+      </span>
+      <time>{{ announcement().updatedAt | date: 'dd MMM yyyy, HH:mm' }}</time>
+    </div>
+    <h3>{{ announcement().title }}</h3>
+    <p>{{ announcement().description }}</p>
+    <strong class="price">
+      {{ announcement().price / 100 | currency: announcement().currency : 'symbol' }}
+    </strong>
+    <p class="listing-submeta">
+      {{ announcement().categoryCode }} · {{ announcement().condition }} · quantità
+      {{ announcement().quantity }}
+    </p>
+    <div class="card-actions">
+      <button
+        class="text-action extension-action"
+        type="button"
+        [disabled]="busy()"
+        (click)="extensionRequested.emit()"
+      >
+        Usa nell’estensione
+      </button>
+      <button
+        class="text-action edit-action"
+        type="button"
+        [disabled]="busy()"
+        (click)="editRequested.emit()"
+      >
+        Modifica annuncio
+      </button>
+      @if (deletionPending()) {
+        <span class="delete-confirmation" role="group" aria-label="Conferma eliminazione">
+          <span>Eliminare definitivamente?</span>
+          <button
+            class="text-action"
+            type="button"
+            [disabled]="busy()"
+            (click)="deletionCancelled.emit()"
+          >
+            Annulla
+          </button>
+          <button
+            class="text-action delete-action confirm-delete-action"
+            type="button"
+            [disabled]="busy()"
+            (click)="deletionConfirmed.emit()"
+          >
+            Conferma
+          </button>
+        </span>
+      } @else {
+        <button
+          class="text-action delete-action"
+          type="button"
+          [disabled]="busy()"
+          (click)="deletionRequested.emit()"
+        >
+          Elimina annuncio
+        </button>
+      }
+    </div>
+    @if (extensionHandoff()) {
+      <p class="extension-handoff" role="status">
+        Contesto pronto: apri l’estensione Chrome per trovare questo annuncio selezionato.
+      </p>
+    }
+  </div>
+
+  <div class="publish-box">
+    <div class="marketplace-label">
+      <span class="mock-mark">M</span>
+      <div><strong>Mock Marketplace</strong><small>Connettore locale V1</small></div>
+    </div>
+
+    <label class="compact-field checkbox-field">
+      <input
+        type="checkbox"
+        [disabled]="busy()"
+        [checked]="channelDraft().enabled"
+        (change)="setChannelEnabled($event)"
+      />
+      <span>Canale abilitato</span>
+    </label>
+
+    <label class="compact-field">
+      <span>Categoria canale</span>
+      <input
+        placeholder="vintage_keyboards"
+        [disabled]="busy()"
+        [value]="channelDraft().category"
+        (input)="setChannelCategory($event)"
+      />
+    </label>
+
+    <button
+      class="text-action"
+      type="button"
+      [disabled]="busy()"
+      (click)="channelSaveRequested.emit()"
+    >
+      Salva configurazione canale
+    </button>
+
+    <div class="channel-actions">
+      <button
+        class="text-action"
+        type="button"
+        [disabled]="busy()"
+        (click)="validationRequested.emit()"
+      >
+        Valida
+      </button>
+      <button
+        class="publish-action"
+        type="button"
+        [disabled]="isPublishDisabled()"
+        (click)="publicationRequested.emit()"
+      >
+        {{ publishButtonLabel() }}
+      </button>
+    </div>
+
+    @if (mockChannel(); as channel) {
+      <p class="channel-status">
+        Stato canale: <strong>{{ channelStatusLabel(channel.status) }}</strong>
+        @if (channel.externalUrl) {
+          ·
+          <a [href]="channel.externalUrl" target="_blank" rel="noopener">annuncio pubblicato</a>
+        }
+        @if (channel.lastError) {
+          · <span class="channel-error">{{ channel.lastError }}</span>
+        }
+      </p>
+    }
+
+    @if (validation(); as validationResult) {
+      <div class="validation-result" [class.valid]="validationResult.valid">
+        <strong>{{
+          validationResult.valid ? 'Configurazione valida' : 'Problemi rilevati'
+        }}</strong>
+        @if (validationResult.issues.length > 0) {
+          <ul>
+            @for (issue of validationResult.issues; track issue.code) {
+              <li>
+                <span class="severity-pill" [class]="issue.severity.toLowerCase()">
+                  {{ issue.severity }}
+                </span>
+                {{ issue.message }}
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="publication-history">
+    <div class="history-heading">
+      <strong>Storico pubblicazioni</strong>
+      <button
+        class="text-action"
+        type="button"
+        [disabled]="busy()"
+        (click)="historyRequested.emit()"
+      >
+        Aggiorna
+      </button>
+    </div>
+    @if (publicationHistory(); as attempts) {
+      @if (attempts.length === 0) {
+        <p>Nessun tentativo registrato.</p>
+      } @else {
+        <ul class="attempt-list">
+          @for (attempt of attempts; track attempt.publicationId) {
+            <li>
+              <span class="status-pill" [class.failed]="attempt.status === 'FAILED'">
+                {{ channelStatusLabel(attempt.status) }}
+              </span>
+              @if (attempt.publishedAt) {
+                <time>{{ attempt.publishedAt | date: 'dd/MM, HH:mm' }}</time>
+              }
+              @if (attempt.externalListingId) {
+                <code>{{ attempt.externalListingId }}</code>
+              }
+              @if (attempt.lastError) {
+                <span class="attempt-error">{{ attempt.lastError }}</span>
+              }
+            </li>
+          }
+        </ul>
+      }
+    } @else {
+      <p>Aggiorna per caricare lo storico.</p>
+    }
+  </div>
+</article>

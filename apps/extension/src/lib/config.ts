@@ -26,7 +26,9 @@ export async function getWebAppBaseUrl(): Promise<string> {
 }
 
 export async function setWebAppBaseUrl(url: string): Promise<void> {
-  await chrome.storage.local.set({ [WEB_APP_BASE_URL_STORAGE_KEY]: url.trim() });
+  await chrome.storage.local.set({
+    [WEB_APP_BASE_URL_STORAGE_KEY]: url.trim(),
+  });
 }
 
 export async function getAuthSession(): Promise<AuthResponse | null> {
@@ -47,10 +49,16 @@ function isAuthResponse(value: unknown): value is AuthResponse {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
-  const candidate = value as { accessToken?: unknown; user?: unknown };
+  const candidate = value as {
+    accessToken?: unknown;
+    refreshToken?: unknown;
+    user?: unknown;
+  };
   if (
     typeof candidate.accessToken !== 'string' ||
     candidate.accessToken.length === 0 ||
+    typeof candidate.refreshToken !== 'string' ||
+    candidate.refreshToken.length === 0 ||
     typeof candidate.user !== 'object' ||
     candidate.user === null
   ) {

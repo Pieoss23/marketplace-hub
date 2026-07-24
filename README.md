@@ -174,6 +174,11 @@ La validazione è completa quando tutti i comandi terminano con codice `0`.
 Per verificare rapidamente il database usa `docker compose ps`: il servizio
 `postgres` deve risultare `healthy`.
 
+La stessa sequenza è eseguita dalla pipeline GitHub Actions in
+`.github/workflows/ci.yml` su ogni push e pull request. La pipeline usa
+PostgreSQL 16, applica le migrazioni con `prisma migrate deploy` e avvia i test
+Angular con Chrome Headless.
+
 > **WSL**: errori UNC o `UtilBindVsockAnyPort` indicano normalmente che
 > `node`, `pnpm` o `docker` stanno risolvendo a eseguibili Windows, oppure che
 > l'integrazione WSL di Docker Desktop non è attiva. Correggi prima il `PATH` e

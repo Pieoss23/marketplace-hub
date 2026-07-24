@@ -1,0 +1,13 @@
+<section class="summary-grid" aria-label="Riepilogo degli annunci">
+  @for (item of items(); track item.status) {
+    <button
+      type="button"
+      [class.active]="activeStatus() === item.status"
+      [attr.aria-pressed]="activeStatus() === item.status"
+      (click)="statusSelected.emit(item.status)"
+    >
+      <strong>{{ item.count }}</strong>
+      <span>{{ item.label }}</span>
+    </button>
+  }
+</section>

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildAnnouncementWebUrl,
   buildSignupWebUrl,
+  filterAnnouncements,
   PopupController,
   readAnnouncementIdFromWebAppUrl,
   type PopupDependencies,
@@ -35,6 +36,7 @@ const secondAnnouncement: AnnouncementResponse = {
 
 const authSession = {
   accessToken: 'signed-token',
+  refreshToken: 'opaque-refresh-token',
   user: { id: 'user-1', email: 'user@example.com' },
 };
 
@@ -49,6 +51,7 @@ function createElements(): PopupElements {
     <p id="auth-status"></p>
     <p id="status"></p>
     <p id="feedback"></p>
+    <input id="announcement-search" />
     <select id="announcement-select"></select>
     <section id="actions" hidden></section>
   `;
@@ -63,14 +66,13 @@ function createElements(): PopupElements {
     authStatus: document.querySelector<HTMLParagraphElement>('#auth-status')!,
     status: document.querySelector<HTMLParagraphElement>('#status')!,
     feedback: document.querySelector<HTMLParagraphElement>('#feedback')!,
+    announcementSearchInput: document.querySelector<HTMLInputElement>('#announcement-search')!,
     announcementSelect: document.querySelector<HTMLSelectElement>('#announcement-select')!,
     actions: document.querySelector<HTMLElement>('#actions')!,
   };
 }
 
-function createDependencies(
-  overrides: Partial<PopupDependencies> = {},
-): PopupDependencies {
+function createDependencies(overrides: Partial<PopupDependencies> = {}): PopupDependencies {
   return {
     getApiBaseUrl: vi.fn().mockResolvedValue('http://localhost:3000/api'),
     setApiBaseUrl: vi.fn().mockResolvedValue(undefined),
@@ -81,6 +83,8 @@ function createDependencies(
     setAuthSession: vi.fn().mockResolvedValue(undefined),
     clearAuthSession: vi.fn().mockResolvedValue(undefined),
     login: vi.fn().mockResolvedValue(authSession),
+    refreshSession: vi.fn().mockResolvedValue(authSession),
+    logout: vi.fn().mockResolvedValue(undefined),
     writeClipboard: vi.fn().mockResolvedValue(undefined),
     fillDemoForm: vi.fn().mockResolvedValue(true),
     openWebApp: vi.fn().mockResolvedValue(undefined),
@@ -143,10 +147,7 @@ describe('PopupController', () => {
       .fn()
       .mockResolvedValueOnce([firstAnnouncement])
       .mockRejectedValueOnce(new Error('Backend non raggiungibile.'));
-    const controller = new PopupController(
-      elements,
-      createDependencies({ fetchAnnouncements }),
-    );
+    const controller = new PopupController(elements, createDependencies({ fetchAnnouncements }));
 
     await controller.initialize();
     await controller.loadAnnouncements();
@@ -165,6 +166,25 @@ describe('PopupController', () => {
     await controller.loadAnnouncements();
 
     expect(elements.announcementSelect.value).toBe(secondAnnouncement.id);
+  });
+
+  it('filters announcements locally and hides actions when there are no matches', async () => {
+    const elements = createElements();
+    const controller = new PopupController(elements, createDependencies());
+    await controller.initialize();
+
+    controller.setSearchQuery('vintage');
+
+    expect(elements.announcementSelect.options).toHaveLength(1);
+    expect(elements.announcementSelect.value).toBe(secondAnnouncement.id);
+    expect(elements.status.textContent).toBe('1 di 2 annunci visibili.');
+    expect(elements.actions.hidden).toBe(false);
+
+    controller.setSearchQuery('nessun risultato');
+
+    expect(elements.announcementSelect.options).toHaveLength(0);
+    expect(elements.status.textContent).toBe('0 di 2 annunci visibili.');
+    expect(elements.actions.hidden).toBe(true);
   });
 
   it('preselects the announcement handed off by the active web app tab', async () => {
@@ -262,6 +282,9 @@ describe('PopupController', () => {
     await controller.logout();
 
     expect(dependencies.clearAuthSession).toHaveBeenCalled();
+    expect(dependencies.logout).toHaveBeenCalledWith('http://localhost:3000/api', {
+      refreshToken: 'opaque-refresh-token',
+    });
     expect(elements.announcementSelect.options).toHaveLength(0);
     expect(elements.status.textContent).toBe('Accedi per caricare i tuoi annunci.');
     expect(elements.loginForm.hidden).toBe(false);
@@ -278,12 +301,79 @@ describe('PopupController', () => {
     expect(elements.feedback.textContent).toBe('Registrazione aperta nella web app.');
   });
 
-  it('clears an expired session after an authenticated API response returns 401', async () => {
+  it('refreshes an expired access token and retries loading announcements once', async () => {
+    const elements = createElements();
+    const refreshedSession = {
+      ...authSession,
+      accessToken: 'rotated-access-token',
+      refreshToken: 'rotated-refresh-token',
+    };
+    const dependencies = createDependencies({
+      fetchAnnouncements: vi
+        .fn()
+        .mockRejectedValueOnce(new ApiRequestError('Sessione non valida.', 401))
+        .mockResolvedValueOnce([firstAnnouncement]),
+      refreshSession: vi.fn().mockResolvedValue(refreshedSession),
+    });
+    const controller = new PopupController(elements, dependencies);
+
+    await controller.initialize();
+
+    expect(dependencies.refreshSession).toHaveBeenCalledWith('http://localhost:3000/api', {
+      refreshToken: 'opaque-refresh-token',
+    });
+    expect(dependencies.setAuthSession).toHaveBeenCalledWith(refreshedSession);
+    expect(dependencies.fetchAnnouncements).toHaveBeenLastCalledWith(
+      'http://localhost:3000/api',
+      'rotated-access-token',
+    );
+    expect(elements.status.textContent).toBe('1 annunci trovati.');
+    expect(elements.loginForm.hidden).toBe(true);
+  });
+
+  it('shares one refresh request between concurrent expired loads', async () => {
+    const elements = createElements();
+    const refreshedSession = {
+      ...authSession,
+      accessToken: 'rotated-access-token',
+      refreshToken: 'rotated-refresh-token',
+    };
+    let resolveRefresh: ((session: typeof refreshedSession) => void) | undefined;
+    const refreshPromise = new Promise<typeof refreshedSession>((resolve) => {
+      resolveRefresh = resolve;
+    });
+    const fetchAnnouncements = vi
+      .fn()
+      .mockResolvedValueOnce([firstAnnouncement])
+      .mockRejectedValueOnce(new ApiRequestError('Sessione non valida.', 401))
+      .mockRejectedValueOnce(new ApiRequestError('Sessione non valida.', 401))
+      .mockResolvedValue([firstAnnouncement]);
+    const dependencies = createDependencies({
+      fetchAnnouncements,
+      refreshSession: vi.fn().mockReturnValue(refreshPromise),
+    });
+    const controller = new PopupController(elements, dependencies);
+    await controller.initialize();
+
+    const firstLoad = controller.loadAnnouncements();
+    const secondLoad = controller.loadAnnouncements();
+    await vi.waitFor(() => {
+      expect(dependencies.refreshSession).toHaveBeenCalledTimes(1);
+    });
+    resolveRefresh?.(refreshedSession);
+    await Promise.all([firstLoad, secondLoad]);
+
+    expect(dependencies.refreshSession).toHaveBeenCalledTimes(1);
+    expect(fetchAnnouncements).toHaveBeenCalledTimes(5);
+  });
+
+  it('clears an expired session when refresh fails', async () => {
     const elements = createElements();
     const dependencies = createDependencies({
       fetchAnnouncements: vi
         .fn()
         .mockRejectedValue(new ApiRequestError('Sessione non valida.', 401)),
+      refreshSession: vi.fn().mockRejectedValue(new Error('Refresh non valido.')),
     });
     const controller = new PopupController(elements, dependencies);
 
@@ -363,6 +453,16 @@ describe('buildAnnouncementWebUrl', () => {
     expect(() => buildAnnouncementWebUrl(' ', 'announcement-1')).toThrow(
       "L'URL della web app non può essere vuoto.",
     );
+  });
+});
+
+describe('filterAnnouncements', () => {
+  it('matches title, description and category without case sensitivity', () => {
+    expect(filterAnnouncements([firstAnnouncement, secondAnnouncement], 'VINTAGE')).toEqual([
+      secondAnnouncement,
+    ]);
+    expect(filterAnnouncements([firstAnnouncement], 'good condition')).toEqual([firstAnnouncement]);
+    expect(filterAnnouncements([firstAnnouncement], 'ELECTRONICS')).toEqual([firstAnnouncement]);
   });
 });
 

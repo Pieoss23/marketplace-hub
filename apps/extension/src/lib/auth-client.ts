@@ -1,20 +1,69 @@
-import type { AuthResponse, LoginRequest } from '@marketplace-hub/contracts';
+import type {
+  AuthResponse,
+  LoginRequest,
+  LogoutRequest,
+  RefreshRequest,
+} from '@marketplace-hub/contracts';
 
 import { ApiRequestError } from './api-client';
 
 export function buildLoginUrl(apiBaseUrl: string): string {
+  return buildAuthUrl(apiBaseUrl, 'login');
+}
+
+export function buildRefreshUrl(apiBaseUrl: string): string {
+  return buildAuthUrl(apiBaseUrl, 'refresh');
+}
+
+export function buildLogoutUrl(apiBaseUrl: string): string {
+  return buildAuthUrl(apiBaseUrl, 'logout');
+}
+
+function buildAuthUrl(apiBaseUrl: string, action: 'login' | 'refresh' | 'logout'): string {
   const normalizedBaseUrl = apiBaseUrl.trim().replace(/\/+$/, '');
   if (normalizedBaseUrl.length === 0) {
     throw new Error("L'URL API non può essere vuoto.");
   }
-  return `${normalizedBaseUrl}/auth/login`;
+  return `${normalizedBaseUrl}/auth/${action}`;
 }
 
-export async function login(
+export async function login(apiBaseUrl: string, request: LoginRequest): Promise<AuthResponse> {
+  return requestAuthSession(buildLoginUrl(apiBaseUrl), request);
+}
+
+export async function refreshSession(
   apiBaseUrl: string,
-  request: LoginRequest,
+  request: RefreshRequest,
 ): Promise<AuthResponse> {
-  const response = await fetch(buildLoginUrl(apiBaseUrl), {
+  return requestAuthSession(buildRefreshUrl(apiBaseUrl), request);
+}
+
+export async function logout(apiBaseUrl: string, request: LogoutRequest): Promise<void> {
+  const response = await fetch(buildLogoutUrl(apiBaseUrl), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+
+  if (response.ok) {
+    return;
+  }
+
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new ApiRequestError("La risposta dell'API non contiene JSON valido.", response.status);
+  }
+
+  throw new ApiRequestError(extractApiMessage(payload, response.status), response.status);
+}
+
+async function requestAuthSession(
+  url: string,
+  request: LoginRequest | RefreshRequest,
+): Promise<AuthResponse> {
+  const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
@@ -40,10 +89,16 @@ function isAuthResponse(value: unknown): value is AuthResponse {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
-  const candidate = value as { accessToken?: unknown; user?: unknown };
+  const candidate = value as {
+    accessToken?: unknown;
+    refreshToken?: unknown;
+    user?: unknown;
+  };
   if (
     typeof candidate.accessToken !== 'string' ||
     candidate.accessToken.length === 0 ||
+    typeof candidate.refreshToken !== 'string' ||
+    candidate.refreshToken.length === 0 ||
     typeof candidate.user !== 'object' ||
     candidate.user === null
   ) {

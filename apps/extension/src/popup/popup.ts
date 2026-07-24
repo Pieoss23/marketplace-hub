@@ -1,5 +1,5 @@
 import { fetchAnnouncements } from '../lib/api-client';
-import { login } from '../lib/auth-client';
+import { login, logout, refreshSession } from '../lib/auth-client';
 import {
   clearAuthSession,
   getApiBaseUrl,
@@ -101,6 +101,7 @@ const elements: PopupElements = {
   authStatus: requiredElement<HTMLParagraphElement>('#auth-status'),
   status: requiredElement<HTMLParagraphElement>('#status'),
   feedback: requiredElement<HTMLParagraphElement>('#feedback'),
+  announcementSearchInput: requiredElement<HTMLInputElement>('#announcement-search'),
   announcementSelect: requiredElement<HTMLSelectElement>('#announcement-select'),
   actions: requiredElement<HTMLElement>('#actions'),
 };
@@ -115,6 +116,8 @@ const dependencies: PopupDependencies = {
   setAuthSession,
   clearAuthSession,
   login,
+  refreshSession,
+  logout,
   writeClipboard: (text) => navigator.clipboard.writeText(text),
   fillDemoForm: sendFillDemoFormMessage,
   openWebApp: (url) =>
@@ -132,6 +135,9 @@ requiredElement<HTMLButtonElement>('#save-api-base-url').addEventListener('click
 });
 requiredElement<HTMLButtonElement>('#refresh').addEventListener('click', () => {
   void controller.loadAnnouncements();
+});
+elements.announcementSearchInput.addEventListener('input', () => {
+  controller.setSearchQuery(elements.announcementSearchInput.value);
 });
 requiredElement<HTMLButtonElement>('#save-web-app-base-url').addEventListener('click', () => {
   void controller.saveWebAppBaseUrl();

@@ -12,15 +12,19 @@ loro credenziali, non contiene adattatori per siti reali e non compie mai azioni
 automatiche: ogni copia o compilazione richiede un comando esplicito
 dell'utente nel popup.
 
-L'accesso a Marketplace Hub usa `POST /api/auth/login` e i contratti condivisi:
-l'estensione conserva in `chrome.storage.local` il JWT e l'utente restituiti
-dall'API, ma non salva mai la password. La sessione è indipendente dallo storage
-Angular; dal popup si può aprire la registrazione nella web app.
+L'accesso a Marketplace Hub usa gli endpoint documentati `POST
+/api/auth/login`, `POST /api/auth/refresh` e `POST /api/auth/logout` e i
+contratti condivisi. L'estensione conserva in `chrome.storage.local` la coppia
+access/refresh token e l'utente restituiti dall'API, ma non salva mai la
+password. Su un `401` ruota la sessione e ripete una sola volta la lettura
+degli annunci; se il refresh fallisce, cancella la sessione locale. Il logout
+revoca il refresh token in modalità best-effort. La sessione è indipendente
+dallo storage Angular; dal popup si può aprire la registrazione nella web app.
 
 ## Struttura
 
 - `src/popup/` — popup dell'estensione: elenco annunci, selezione, copia
-  campi/riepilogo, comando di compilazione del form demo.
+  campi/riepilogo, ricerca locale e comando di compilazione del form demo.
 - `src/content/demo-form-content-script.ts` — script iniettato solo sulla
   pagina demo (`http://localhost:4300/*`), applica i valori ricevuti dal
   popup ai campi noti (`#demo-title`, `#demo-description`, `#demo-price`).
@@ -68,8 +72,9 @@ pnpm --filter @marketplace-hub/extension typecheck
 ```
 
 La suite verifica mapping e formattazione, validazione delle risposte REST,
-contratto messaggio popup → content script, compilazione del DOM demo e confini
-di sicurezza del manifest (host locali e permessi minimi).
+ricerca locale degli annunci, contratto messaggio popup → content script,
+compilazione del DOM demo e confini di sicurezza del manifest (host locali e
+permessi minimi).
 
 ## Checklist manuale per il caricamento in Chrome e la prova end-to-end
 
@@ -118,8 +123,9 @@ prodotto.
 ## Limitazioni (per costruzione, non da rimuovere in questa fase)
 
 - Nessun login o storage di credenziali di marketplace.
-- Nessuna password Marketplace Hub persistita; logout, cambio endpoint e
-  risposta `401` eliminano la sessione locale dell'estensione.
+- Nessuna password Marketplace Hub persistita; logout e cambio endpoint
+  eliminano la sessione locale. Una risposta `401` avvia un solo tentativo di
+  refresh e, se fallisce, elimina la sessione.
 - Nessun adattatore per siti reali: il content script è vincolato via
   `matches` alla sola pagina demo locale (`localhost:4300`).
 - Gli host API remoti sono permessi opzionali: non sono accessibili finché

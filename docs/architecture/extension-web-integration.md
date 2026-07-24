@@ -37,9 +37,11 @@ L'estensione mantiene separati:
 
 Web app ed estensione usano gli stessi contratti `LoginRequest` e
 `AuthResponse`, ma non condividono storage di sessione. L'estensione esegue il
-login attraverso la REST API, conserva solo JWT e utente in
-`chrome.storage.local` e cancella la sessione su logout, cambio endpoint o
-risposta `401`. La password vive soltanto nel form durante la richiesta.
+login attraverso la REST API, conserva access token, refresh token e utente in
+`chrome.storage.local` e non conserva mai la password. Su un `401` ruota il
+refresh token e ripete una sola volta la lettura; un refresh fallito cancella
+la sessione. Il logout cancella subito lo stato locale e tenta la revoca lato
+server in modalità best-effort.
 
 Nello stato V1 corrente il backend protegge **tutti** gli endpoint Announcement,
 letture incluse (`JwtAuthGuard` a livello di controller): la sessione richiesta
@@ -65,6 +67,43 @@ dashboard. L'azione aggiorna l'URL della scheda corrente; quando l'utente apre
 il popup, l'estensione legge la sola scheda attiva e preseleziona l'annuncio se
 origin e path coincidono con `webAppBaseUrl`. L'annuncio completo viene comunque
 caricato dalla REST API: il parametro trasporta soltanto l'identificatore.
+
+## Modello di coerenza funzionale
+
+Web app ed estensione sono superfici coordinate, non copie identiche. La web
+app è la superficie completa: può includere flussi articolati, viste di
+dettaglio, configurazioni e strumenti di gestione. L'estensione è una
+superficie rapida e intenzionalmente più piccola: contiene le funzionalità
+principali utili durante il riutilizzo dell'annuncio nel browser.
+
+Per ogni incremento della web app, il piano deve stabilire se la modifica
+interessa il nucleo condiviso:
+
+| Esito | Criterio | Obbligo |
+| --- | --- | --- |
+| Nucleo condiviso | La funzione è essenziale per consultare, selezionare o riutilizzare consapevolmente l'annuncio nel browser | Mantenere coerenti web app ed estensione nello stesso incremento |
+| Funzione web avanzata | La funzione riguarda gestione, analisi, configurazione o un flusso articolato | Mantenerla nella web app e, se utile, offrire un deep link dall'estensione |
+| Esclusione | La funzione viola i confini di sicurezza o non ha senso nell'estensione | Non replicarla e non aggirare il limite |
+
+Il nucleo condiviso usa i contratti e la REST API; non duplica logica di
+dominio nel popup e non condivide direttamente lo stato Angular. Copia,
+apertura della dashboard e compilazione della pagina demo restano sempre
+azioni esplicite.
+
+Esempi correnti:
+
+- autenticazione, elenco, selezione e contesto dell'annuncio hanno parità;
+- creazione, modifica e configurazione completa restano nella web app e sono
+  raggiungibili tramite apertura esplicita della dashboard;
+- pubblicazione mock, eliminazione e qualsiasi invio automatico non vengono
+  replicati nel popup;
+- integrazioni con siti reali restano escluse finché non vengono approvate
+  separatamente.
+
+Una modifica al nucleo condiviso è completa solo con test su entrambe le
+superfici. Una nuova delega alla web app deve verificare il deep link. Una
+nuova classe di esclusione deve essere documentata senza trasformare
+l'estensione in una seconda dashboard completa.
 
 ## Roadmap
 

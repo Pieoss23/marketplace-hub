@@ -2,6 +2,8 @@ import type {
   AnnouncementResponse,
   AuthResponse,
   LoginRequest,
+  LogoutRequest,
+  RefreshRequest,
 } from '@marketplace-hub/contracts';
 
 import { ApiRequestError } from '../lib/api-client';
@@ -18,6 +20,7 @@ export interface PopupElements {
   readonly authStatus: HTMLParagraphElement;
   readonly status: HTMLParagraphElement;
   readonly feedback: HTMLParagraphElement;
+  readonly announcementSearchInput: HTMLInputElement;
   readonly announcementSelect: HTMLSelectElement;
   readonly actions: HTMLElement;
 }
@@ -35,6 +38,8 @@ export interface PopupDependencies {
   readonly setAuthSession: (session: AuthResponse) => Promise<void>;
   readonly clearAuthSession: () => Promise<void>;
   readonly login: (apiBaseUrl: string, request: LoginRequest) => Promise<AuthResponse>;
+  readonly refreshSession: (apiBaseUrl: string, request: RefreshRequest) => Promise<AuthResponse>;
+  readonly logout: (apiBaseUrl: string, request: LogoutRequest) => Promise<void>;
   readonly writeClipboard: (text: string) => Promise<void>;
   readonly fillDemoForm: (message: FillDemoFormMessage) => Promise<boolean>;
   readonly openWebApp: (url: string) => Promise<void>;
@@ -58,6 +63,8 @@ function errorMessage(error: unknown, fallback: string): string {
 export class PopupController {
   private announcements: readonly AnnouncementResponse[] = [];
   private authSession: AuthResponse | null = null;
+  private refreshInFlight: Promise<AuthResponse> | null = null;
+  private searchQuery = '';
 
   constructor(
     private readonly elements: PopupElements,
@@ -90,6 +97,13 @@ export class PopupController {
   }
 
   async loadAnnouncements(preferredSelection?: string): Promise<void> {
+    await this.loadAnnouncementsWithRefresh(preferredSelection, true);
+  }
+
+  private async loadAnnouncementsWithRefresh(
+    preferredSelection: string | undefined,
+    allowRefresh: boolean,
+  ): Promise<void> {
     const selection = preferredSelection ?? this.elements.announcementSelect.value;
     this.elements.feedback.textContent = '';
     if (!this.authSession) {
@@ -107,11 +121,28 @@ export class PopupController {
         this.authSession.accessToken,
       );
       this.renderAnnouncements(selection);
-      this.elements.status.textContent =
-        this.announcements.length === 0
-          ? 'Nessun annuncio disponibile.'
-          : `${this.announcements.length} annunci trovati.`;
+      this.renderAnnouncementCount();
     } catch (error) {
+      if (
+        allowRefresh &&
+        error instanceof ApiRequestError &&
+        error.status === 401 &&
+        this.authSession
+      ) {
+        try {
+          const apiBaseUrl = await this.dependencies.getApiBaseUrl();
+          const refreshedSession = await this.refreshAuthSession(apiBaseUrl);
+          await this.dependencies.setAuthSession(refreshedSession);
+          this.authSession = refreshedSession;
+          this.renderAuthSession();
+          await this.loadAnnouncementsWithRefresh(selection, false);
+          return;
+        } catch {
+          await this.expireSession();
+          this.elements.status.textContent = 'Sessione scaduta. Accedi di nuovo.';
+          return;
+        }
+      }
       if (error instanceof ApiRequestError && error.status === 401) {
         await this.expireSession();
         this.elements.status.textContent = 'Sessione scaduta. Accedi di nuovo.';
@@ -144,6 +175,13 @@ export class PopupController {
     }
   }
 
+  setSearchQuery(query: string): void {
+    const preferredSelection = this.elements.announcementSelect.value;
+    this.searchQuery = query;
+    this.renderAnnouncements(preferredSelection);
+    this.renderAnnouncementCount();
+  }
+
   async login(): Promise<void> {
     const email = this.elements.loginEmailInput.value.trim();
     const password = this.elements.loginPasswordInput.value;
@@ -154,7 +192,10 @@ export class PopupController {
 
     try {
       const apiBaseUrl = await this.dependencies.getApiBaseUrl();
-      const session = await this.dependencies.login(apiBaseUrl, { email, password });
+      const session = await this.dependencies.login(apiBaseUrl, {
+        email,
+        password,
+      });
       await this.dependencies.setAuthSession(session);
       this.authSession = session;
       this.elements.loginPasswordInput.value = '';
@@ -167,7 +208,23 @@ export class PopupController {
   }
 
   async logout(): Promise<void> {
+    const session = this.authSession;
+    let apiBaseUrl: string | undefined;
+    try {
+      apiBaseUrl = await this.dependencies.getApiBaseUrl();
+    } catch {
+      // Local logout must still succeed when configuration cannot be read.
+    }
     await this.expireSession();
+    if (session && apiBaseUrl) {
+      try {
+        await this.dependencies.logout(apiBaseUrl, {
+          refreshToken: session.refreshToken,
+        });
+      } catch {
+        // Revocation is best-effort because the local session is already gone.
+      }
+    }
     this.elements.feedback.textContent = 'Sessione terminata.';
     this.elements.status.textContent = 'Accedi per caricare i tuoi annunci.';
   }
@@ -192,7 +249,7 @@ export class PopupController {
     } catch (error) {
       this.elements.feedback.textContent = errorMessage(
         error,
-        "Impossibile salvare la configurazione della web app.",
+        'Impossibile salvare la configurazione della web app.',
       );
     }
   }
@@ -255,10 +312,7 @@ export class PopupController {
       await this.dependencies.openWebApp(url);
       this.elements.feedback.textContent = 'Annuncio aperto nella web app.';
     } catch (error) {
-      this.elements.feedback.textContent = errorMessage(
-        error,
-        'Impossibile aprire la web app.',
-      );
+      this.elements.feedback.textContent = errorMessage(error, 'Impossibile aprire la web app.');
     }
   }
 
@@ -270,7 +324,8 @@ export class PopupController {
   private renderAnnouncements(preferredSelection?: string): void {
     this.elements.announcementSelect.replaceChildren();
 
-    for (const announcement of this.announcements) {
+    const visibleAnnouncements = filterAnnouncements(this.announcements, this.searchQuery);
+    for (const announcement of visibleAnnouncements) {
       const option = document.createElement('option');
       option.value = announcement.id;
       option.textContent = `${announcement.title} — ${formatPriceEuros(
@@ -282,12 +337,23 @@ export class PopupController {
 
     if (
       preferredSelection &&
-      this.announcements.some((announcement) => announcement.id === preferredSelection)
+      visibleAnnouncements.some((announcement) => announcement.id === preferredSelection)
     ) {
       this.elements.announcementSelect.value = preferredSelection;
     }
 
-    this.elements.actions.hidden = this.announcements.length === 0;
+    this.elements.actions.hidden = visibleAnnouncements.length === 0;
+  }
+
+  private renderAnnouncementCount(): void {
+    const visibleCount = filterAnnouncements(this.announcements, this.searchQuery).length;
+    if (this.announcements.length === 0) {
+      this.elements.status.textContent = 'Nessun annuncio disponibile.';
+      return;
+    }
+    this.elements.status.textContent = this.searchQuery.trim()
+      ? `${visibleCount} di ${this.announcements.length} annunci visibili.`
+      : `${this.announcements.length} annunci trovati.`;
   }
 
   private renderAuthSession(): void {
@@ -297,6 +363,27 @@ export class PopupController {
     this.elements.authStatus.textContent = this.authSession
       ? `Connesso come ${this.authSession.user.email}`
       : 'Non autenticato';
+  }
+
+  private async refreshAuthSession(apiBaseUrl: string): Promise<AuthResponse> {
+    if (this.refreshInFlight) {
+      return this.refreshInFlight;
+    }
+    if (!this.authSession) {
+      throw new Error('Sessione non disponibile.');
+    }
+
+    const request = this.dependencies.refreshSession(apiBaseUrl, {
+      refreshToken: this.authSession.refreshToken,
+    });
+    this.refreshInFlight = request;
+    try {
+      return await request;
+    } finally {
+      if (this.refreshInFlight === request) {
+        this.refreshInFlight = null;
+      }
+    }
   }
 
   private async expireSession(): Promise<void> {
@@ -347,4 +434,19 @@ export function readAnnouncementIdFromWebAppUrl(
   } catch {
     return undefined;
   }
+}
+
+export function filterAnnouncements(
+  announcements: readonly AnnouncementResponse[],
+  query: string,
+): readonly AnnouncementResponse[] {
+  const normalizedQuery = query.trim().toLocaleLowerCase('it');
+  if (!normalizedQuery) {
+    return announcements;
+  }
+  return announcements.filter((announcement) =>
+    [announcement.title, announcement.description, announcement.categoryCode].some((value) =>
+      value.toLocaleLowerCase('it').includes(normalizedQuery),
+    ),
+  );
 }

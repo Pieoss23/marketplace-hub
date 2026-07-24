@@ -25,7 +25,9 @@
     <div class="section-heading">
       <div>
         <p class="step">01 · Annuncio centrale</p>
-        <h2 id="create-title">{{ isEditing() ? 'Modifica inserzione' : 'Crea una nuova inserzione' }}</h2>
+        <h2 id="create-title">
+          {{ isEditing() ? 'Modifica inserzione' : 'Crea una nuova inserzione' }}
+        </h2>
       </div>
       <p>I dati restano indipendenti dai marketplace.</p>
     </div>
@@ -50,18 +52,24 @@
           announcementForm.controls.description.touched &&
           announcementForm.controls.description.invalid
         ) {
-          <small>Inserisci una descrizione.</small>
+          <small>Inserisci una descrizione (massimo 5.000 caratteri).</small>
         }
       </label>
 
       <label class="field">
         <span>Prezzo · Euro</span>
-        <input formControlName="priceEuros" type="number" min="0" step="0.01" />
+        <input formControlName="priceEuros" type="number" min="0.01" step="0.01" />
+        @if (
+          announcementForm.controls.priceEuros.touched &&
+          announcementForm.controls.priceEuros.invalid
+        ) {
+          <small>Inserisci un prezzo maggiore di zero.</small>
+        }
       </label>
 
       <label class="field">
         <span>Valuta</span>
-        <input formControlName="currency" maxlength="3" placeholder="EUR" />
+        <input formControlName="currency" readonly aria-readonly="true" />
       </label>
 
       <label class="field">
@@ -127,6 +135,39 @@
       </p>
     </div>
 
+    @if (announcements().length > 0) {
+      <app-announcement-summary
+        [announcements]="announcements()"
+        [activeStatus]="announcementStatusFilter()"
+        (statusSelected)="selectAnnouncementStatus($event)"
+      />
+      <div class="announcement-filters" aria-label="Filtra gli annunci">
+        <label class="compact-field search-field">
+          <span>Cerca</span>
+          <input
+            type="search"
+            placeholder="Titolo, descrizione o categoria"
+            [value]="announcementSearchQuery()"
+            (input)="setAnnouncementSearchQuery($event)"
+          />
+        </label>
+        <label class="compact-field">
+          <span>Stato</span>
+          <select
+            [value]="announcementStatusFilter()"
+            (change)="setAnnouncementStatusFilter($event)"
+          >
+            <option value="ALL">Tutti</option>
+            <option value="DRAFT">Bozza</option>
+            <option value="READY">Pronto</option>
+            <option value="PARTIALLY_PUBLISHED">Pubblicato parzialmente</option>
+            <option value="PUBLISHED">Pubblicato</option>
+          </select>
+        </label>
+        <p>{{ filteredAnnouncements().length }} di {{ announcements().length }} visibili</p>
+      </div>
+    }
+
     @if (isLoadingAnnouncements()) {
       <p class="empty-state">Caricamento annunci…</p>
     } @else if (announcements().length === 0) {
@@ -134,185 +175,35 @@
         <strong>Il tuo spazio è ancora vuoto.</strong>
         <span>Crea il primo annuncio usando il modulo qui sopra.</span>
       </div>
+    } @else if (filteredAnnouncements().length === 0) {
+      <div class="empty-state">
+        <strong>Nessun annuncio corrisponde ai filtri.</strong>
+        <span>Modifica la ricerca o seleziona un altro stato.</span>
+      </div>
     } @else {
       <div class="listing-grid">
-        @for (announcement of announcements(); track announcement.id) {
-          <article
-            class="listing-card"
-            [class.linked-announcement]="isLinkedAnnouncement(announcement.id)"
-            [attr.id]="'announcement-' + announcement.id"
-          >
-            @if (isLinkedAnnouncement(announcement.id)) {
-              <p class="extension-context">Annuncio collegato all’estensione Chrome</p>
-            }
-            <div class="listing-main">
-              <div class="listing-meta">
-                <span class="status-pill" [class.failed]="announcement.status === 'DRAFT'">
-                  {{ announcementStatusLabel(announcement.status) }}
-                </span>
-                <time>{{ announcement.updatedAt | date: 'dd MMM yyyy, HH:mm' }}</time>
-              </div>
-              <h3>{{ announcement.title }}</h3>
-              <p>{{ announcement.description }}</p>
-              <strong class="price">
-                {{ announcement.price / 100 | currency: announcement.currency : 'symbol' }}
-              </strong>
-              <p class="listing-submeta">
-                {{ announcement.categoryCode }} · {{ announcement.condition }} · quantità
-                {{ announcement.quantity }}
-              </p>
-              <div class="card-actions">
-                <button
-                  class="text-action extension-action"
-                  type="button"
-                  [disabled]="isAnnouncementBusy(announcement.id)"
-                  (click)="prepareForExtension(announcement.id)"
-                >
-                  Usa nell’estensione
-                </button>
-                <button
-                  class="text-action edit-action"
-                  type="button"
-                  [disabled]="isAnnouncementBusy(announcement.id)"
-                  (click)="editAnnouncement(announcement)"
-                >
-                  Modifica annuncio
-                </button>
-                <button
-                  class="text-action delete-action"
-                  type="button"
-                  [disabled]="isAnnouncementBusy(announcement.id)"
-                  (click)="removeAnnouncement(announcement.id)"
-                >
-                  Elimina annuncio
-                </button>
-              </div>
-              @if (extensionHandoffAnnouncementId() === announcement.id) {
-                <p class="extension-handoff" role="status">
-                  Contesto pronto: apri l’estensione Chrome per trovare questo annuncio selezionato.
-                </p>
-              }
-            </div>
-
-            <div class="publish-box">
-              <div class="marketplace-label">
-                <span class="mock-mark">M</span>
-                <div><strong>Mock Marketplace</strong><small>Connettore locale V1</small></div>
-              </div>
-
-              <label class="compact-field checkbox-field">
-                <input
-                  type="checkbox"
-                  [disabled]="isAnnouncementBusy(announcement.id)"
-                  [checked]="channelDraft(announcement.id).enabled"
-                  (change)="setChannelEnabled(announcement.id, $event)"
-                />
-                <span>Canale abilitato</span>
-              </label>
-
-              <label class="compact-field">
-                <span>Categoria canale</span>
-                <input
-                  placeholder="vintage_keyboards"
-                  [disabled]="isAnnouncementBusy(announcement.id)"
-                  [value]="channelDraft(announcement.id).category"
-                  (input)="setChannelCategory(announcement.id, $event)"
-                />
-              </label>
-
-              <button
-                class="text-action"
-                type="button"
-                [disabled]="isAnnouncementBusy(announcement.id)"
-                (click)="saveChannel(announcement.id)"
-              >
-                Salva configurazione canale
-              </button>
-
-              <div class="channel-actions">
-                <button
-                  class="text-action"
-                  type="button"
-                  [disabled]="isAnnouncementBusy(announcement.id)"
-                  (click)="validateChannel(announcement.id)"
-                >
-                  Valida
-                </button>
-                <button
-                  class="publish-action"
-                  type="button"
-                  [disabled]="isAnnouncementBusy(announcement.id)"
-                  (click)="publishChannel(announcement.id)"
-                >
-                  {{ isAnnouncementBusy(announcement.id) ? 'Attendi…' : 'Pubblica su Mock' }}
-                </button>
-              </div>
-
-              @if (mockChannel(announcement); as channel) {
-                <p class="channel-status">
-                  Stato canale: <strong>{{ channelStatusLabel(channel.status) }}</strong>
-                  @if (channel.externalUrl) {
-                    · <a [href]="channel.externalUrl" target="_blank" rel="noopener">annuncio pubblicato</a>
-                  }
-                </p>
-              }
-
-              @if (validationResults()[announcement.id]; as validation) {
-                <div class="validation-result" [class.valid]="validation.valid">
-                  <strong>{{ validation.valid ? 'Configurazione valida' : 'Problemi rilevati' }}</strong>
-                  @if (validation.issues.length > 0) {
-                    <ul>
-                      @for (issue of validation.issues; track issue.code) {
-                        <li>
-                          <span class="severity-pill" [class]="issue.severity.toLowerCase()">
-                            {{ issue.severity }}
-                          </span>
-                          {{ issue.message }}
-                        </li>
-                      }
-                    </ul>
-                  }
-                </div>
-              }
-            </div>
-
-            <div class="publication-history">
-              <div class="history-heading">
-                <strong>Storico pubblicazioni</strong>
-                <button
-                  class="text-action"
-                  type="button"
-                  [disabled]="isAnnouncementBusy(announcement.id)"
-                  (click)="loadPublications(announcement.id)"
-                >
-                  Aggiorna
-                </button>
-              </div>
-              @if (publicationHistory()[announcement.id]; as attempts) {
-                @if (attempts.length === 0) {
-                  <p>Nessun tentativo registrato.</p>
-                } @else {
-                  <ul class="attempt-list">
-                    @for (attempt of attempts; track attempt.publicationId) {
-                      <li>
-                        <span class="status-pill" [class.failed]="attempt.status === 'FAILED'">
-                          {{ channelStatusLabel(attempt.status) }}
-                        </span>
-                        @if (attempt.publishedAt) {
-                          <time>{{ attempt.publishedAt | date: 'dd/MM, HH:mm' }}</time>
-                        }
-                        @if (attempt.externalListingId) {
-                          <code>{{ attempt.externalListingId }}</code>
-                        }
-                      </li>
-                    }
-                  </ul>
-                }
-              } @else {
-                <p>Aggiorna per caricare lo storico.</p>
-              }
-            </div>
-          </article>
+        @for (announcement of filteredAnnouncements(); track announcement.id) {
+          <app-announcement-card
+            [announcement]="announcement"
+            [channelDraft]="channelDraft(announcement.id)"
+            [validation]="validationResults()[announcement.id]"
+            [publicationHistory]="publicationHistory()[announcement.id]"
+            [busy]="isAnnouncementBusy(announcement.id)"
+            [linked]="isLinkedAnnouncement(announcement.id)"
+            [extensionHandoff]="extensionHandoffAnnouncementId() === announcement.id"
+            [deletionPending]="pendingDeletionId() === announcement.id"
+            (extensionRequested)="prepareForExtension(announcement.id)"
+            (editRequested)="editAnnouncement(announcement)"
+            (deletionRequested)="requestAnnouncementDeletion(announcement.id)"
+            (deletionCancelled)="cancelAnnouncementDeletion()"
+            (deletionConfirmed)="confirmAnnouncementDeletion(announcement.id)"
+            (channelEnabledChanged)="setChannelEnabled(announcement.id, $event)"
+            (channelCategoryChanged)="setChannelCategory(announcement.id, $event)"
+            (channelSaveRequested)="saveChannel(announcement.id)"
+            (validationRequested)="validateChannel(announcement.id)"
+            (publicationRequested)="publishChannel(announcement.id)"
+            (historyRequested)="loadPublications(announcement.id)"
+          />
         }
       </div>
     }

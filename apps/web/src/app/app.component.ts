@@ -1,6 +1,12 @@
-import { CurrencyPipe, DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import type {
   AnnouncementResponse,
@@ -12,6 +18,14 @@ import type {
 import { finalize } from 'rxjs';
 
 import { AnnouncementsService } from './announcements.service';
+import {
+  AnnouncementCardComponent,
+  type AnnouncementChannelDraft,
+} from './announcement-card.component';
+import {
+  AnnouncementSummaryComponent,
+  type AnnouncementStatusFilter,
+} from './announcement-summary.component';
 import { HealthService } from './health.service';
 
 const MOCK_CONNECTOR_CODE = 'mock';
@@ -26,16 +40,11 @@ const CONDITIONS: ReadonlyArray<{ value: Condition; label: string }> = [
   { value: 'FOR_PARTS', label: 'Per ricambi' },
 ];
 
-interface ChannelDraft {
-  readonly enabled: boolean;
-  readonly category: string;
-}
-
-const EMPTY_CHANNEL_DRAFT: ChannelDraft = { enabled: false, category: '' };
+const EMPTY_CHANNEL_DRAFT: AnnouncementChannelDraft = { enabled: false, category: '' };
 
 @Component({
   selector: 'app-root',
-  imports: [CurrencyPipe, DatePipe, ReactiveFormsModule],
+  imports: [AnnouncementCardComponent, AnnouncementSummaryComponent, ReactiveFormsModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,8 +58,8 @@ export class AppComponent implements OnInit {
 
   protected readonly announcementForm = this.formBuilder.nonNullable.group({
     title: ['', [Validators.required, Validators.maxLength(120)]],
-    description: ['', [Validators.required, Validators.maxLength(4000)]],
-    priceEuros: [0, [Validators.required, Validators.min(0)]],
+    description: ['', [Validators.required, Validators.maxLength(5000)]],
+    priceEuros: [0, [Validators.required, Validators.min(0.01)]],
     currency: ['EUR', [Validators.required, Validators.maxLength(3)]],
     categoryCode: ['', [Validators.required]],
     condition: ['USED_GOOD' as Condition, [Validators.required]],
@@ -59,7 +68,11 @@ export class AppComponent implements OnInit {
 
   protected readonly health = signal<HealthResponse | null>(null);
   protected readonly announcements = signal<readonly AnnouncementResponse[]>([]);
-  protected readonly channelDrafts = signal<Readonly<Record<string, ChannelDraft>>>({});
+  protected readonly announcementSearchQuery = signal('');
+  protected readonly announcementStatusFilter = signal<AnnouncementStatusFilter>('ALL');
+  protected readonly channelDrafts = signal<
+    Readonly<Record<string, AnnouncementChannelDraft>>
+  >({});
   protected readonly validationResults = signal<
     Readonly<Record<string, ChannelValidationResponse>>
   >({});
@@ -70,11 +83,19 @@ export class AppComponent implements OnInit {
   protected readonly isLoadingAnnouncements = signal(false);
   protected readonly isSubmitting = signal(false);
   protected readonly editingAnnouncementId = signal<string | null>(null);
+  protected readonly pendingDeletionId = signal<string | null>(null);
   protected readonly linkedAnnouncementId = signal(readAnnouncementIdFromUrl(window.location.href));
   protected readonly extensionHandoffAnnouncementId = signal<string | null>(null);
   protected readonly busyAnnouncementIds = signal<ReadonlySet<string>>(new Set());
 
   protected readonly isEditing = computed(() => this.editingAnnouncementId() !== null);
+  protected readonly filteredAnnouncements = computed(() =>
+    filterAnnouncements(
+      this.announcements(),
+      this.announcementSearchQuery(),
+      this.announcementStatusFilter(),
+    ),
+  );
 
   ngOnInit(): void {
     this.checkBackend();
@@ -143,15 +164,48 @@ export class AppComponent implements OnInit {
     this.extensionHandoffAnnouncementId.set(announcementId);
   }
 
-  protected removeAnnouncement(announcementId: string): void {
+  protected setAnnouncementSearchQuery(event: Event): void {
+    if (event.target instanceof HTMLInputElement) {
+      this.announcementSearchQuery.set(event.target.value);
+    }
+  }
+
+  protected setAnnouncementStatusFilter(event: Event): void {
+    if (event.target instanceof HTMLSelectElement) {
+      this.announcementStatusFilter.set(event.target.value as AnnouncementStatusFilter);
+    }
+  }
+
+  protected selectAnnouncementStatus(status: AnnouncementStatusFilter): void {
+    this.announcementStatusFilter.set(status);
+  }
+
+  protected requestAnnouncementDeletion(announcementId: string): void {
     if (this.isAnnouncementBusy(announcementId)) {
+      return;
+    }
+    this.pageErrors.set([]);
+    this.pendingDeletionId.set(announcementId);
+  }
+
+  protected cancelAnnouncementDeletion(): void {
+    this.pendingDeletionId.set(null);
+  }
+
+  protected confirmAnnouncementDeletion(announcementId: string): void {
+    if (this.pendingDeletionId() !== announcementId || this.isAnnouncementBusy(announcementId)) {
       return;
     }
     this.setAnnouncementBusy(announcementId, true);
     this.pageErrors.set([]);
     this.announcementsService
       .remove(announcementId)
-      .pipe(finalize(() => this.setAnnouncementBusy(announcementId, false)))
+      .pipe(
+        finalize(() => {
+          this.setAnnouncementBusy(announcementId, false);
+          this.pendingDeletionId.set(null);
+        }),
+      )
       .subscribe({
         next: () => {
           this.announcements.update((current) =>
@@ -165,22 +219,14 @@ export class AppComponent implements OnInit {
       });
   }
 
-  protected setChannelEnabled(announcementId: string, event: Event): void {
-    if (!(event.target instanceof HTMLInputElement)) {
-      return;
-    }
-    const enabled = event.target.checked;
+  protected setChannelEnabled(announcementId: string, enabled: boolean): void {
     this.channelDrafts.update((current) => ({
       ...current,
       [announcementId]: { ...(current[announcementId] ?? EMPTY_CHANNEL_DRAFT), enabled },
     }));
   }
 
-  protected setChannelCategory(announcementId: string, event: Event): void {
-    if (!(event.target instanceof HTMLInputElement)) {
-      return;
-    }
-    const category = event.target.value;
+  protected setChannelCategory(announcementId: string, category: string): void {
     this.channelDrafts.update((current) => ({
       ...current,
       [announcementId]: { ...(current[announcementId] ?? EMPTY_CHANNEL_DRAFT), category },
@@ -264,27 +310,7 @@ export class AppComponent implements OnInit {
       });
   }
 
-  protected announcementStatusLabel(status: AnnouncementResponse['status']): string {
-    const labels: Record<AnnouncementResponse['status'], string> = {
-      DRAFT: 'Bozza',
-      READY: 'Pronto',
-      PARTIALLY_PUBLISHED: 'Pubblicato parzialmente',
-      PUBLISHED: 'Pubblicato',
-    };
-    return labels[status];
-  }
-
-  protected channelStatusLabel(status: PublishAnnouncementResponse['status']): string {
-    const labels: Record<PublishAnnouncementResponse['status'], string> = {
-      READY: 'Pronto',
-      PUBLISHING: 'Pubblicazione…',
-      PUBLISHED: 'Pubblicato',
-      FAILED: 'Fallito',
-    };
-    return labels[status];
-  }
-
-  protected channelDraft(announcementId: string): ChannelDraft {
+  protected channelDraft(announcementId: string): AnnouncementChannelDraft {
     return this.channelDrafts()[announcementId] ?? EMPTY_CHANNEL_DRAFT;
   }
 
@@ -389,7 +415,9 @@ function extractErrorMessages(error: unknown): readonly string[] {
   const details = error.error['details'];
   if (Array.isArray(details)) {
     const messages = details
-      .map((item) => (typeof item === 'string' ? item : isRecord(item) ? item['message'] : undefined))
+      .map((item) =>
+        typeof item === 'string' ? item : isRecord(item) ? item['message'] : undefined,
+      )
       .filter((message): message is string => typeof message === 'string');
     if (messages.length > 0) {
       return messages;
@@ -419,4 +447,23 @@ export function buildAnnouncementContextUrl(currentUrl: string, announcementId: 
   const url = new URL(currentUrl);
   url.searchParams.set('announcementId', announcementId);
   return url.toString();
+}
+
+export function filterAnnouncements(
+  announcements: readonly AnnouncementResponse[],
+  query: string,
+  status: AnnouncementStatusFilter,
+): readonly AnnouncementResponse[] {
+  const normalizedQuery = query.trim().toLocaleLowerCase('it');
+  return announcements.filter((announcement) => {
+    if (status !== 'ALL' && announcement.status !== status) {
+      return false;
+    }
+    if (!normalizedQuery) {
+      return true;
+    }
+    return [announcement.title, announcement.description, announcement.categoryCode].some((value) =>
+      value.toLocaleLowerCase('it').includes(normalizedQuery),
+    );
+  });
 }

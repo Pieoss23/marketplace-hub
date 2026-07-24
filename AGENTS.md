@@ -53,6 +53,26 @@ aggiramento di CAPTCHA o protezioni anti-bot e uso di selettori non documentati
 su marketplace reali. Non vieta il copia-incolla avviato dall'utente né i test
 di compilazione assistita eseguiti sulla pagina demo controllata dal progetto.
 
+## Coerenza tra web app ed estensione
+
+La web app è la superficie completa e più strutturata del prodotto.
+L'estensione ne offre un sottoinsieme essenziale, concentrato sulle
+funzionalità principali utili a recuperare e riutilizzare consapevolmente
+l'annuncio nel browser.
+
+* Ogni incremento web deve indicare se modifica una funzionalità principale
+  condivisa con l'estensione.
+* Le funzionalità principali condivise devono restare coerenti nelle due
+  superfici e, quando cambiano, devono essere aggiornate anche nell'estensione
+  nello stesso incremento.
+* Le funzionalità avanzate possono restare esclusivamente nella web app; quando
+  utile, l'estensione deve offrire un collegamento esplicito al contesto
+  corretto della dashboard.
+* La coerenza non autorizza pubblicazione automatica, invio di form, scraping,
+  browser automation, API reali o capacità non documentate.
+* Una modifica condivisa deve includere test su entrambe le superfici e una
+  verifica locale del passaggio web app ↔ estensione quando applicabile.
+
 ## Stack
 
 * TypeScript strict
@@ -114,6 +134,8 @@ Durante l’implementazione:
 
 * procedere con modifiche piccole;
 * evitare refactoring non richiesti;
+* verificare se una modifica web interessa il nucleo funzionale condiviso con
+  l'estensione e, in quel caso, aggiornare entrambe le superfici;
 * non aggiungere dipendenze senza motivazione;
 * non cambiare contratti pubblici senza segnalarlo;
 * mantenere TypeScript strict;
@@ -141,5 +163,7 @@ Una task è conclusa soltanto quando:
 * non ci sono errori di lint;
 * gli endpoint modificati sono documentati;
 * gli errori sono gestiti;
+* le funzionalità principali condivise tra web app ed estensione restano
+  coerenti;
 * non sono state introdotte integrazioni fittizie;
 * il comportamento può essere verificato localmente.

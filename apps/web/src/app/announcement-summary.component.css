@@ -1,0 +1,40 @@
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: -0.75rem 0 1.5rem;
+}
+
+button {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid #ddd9cd;
+  border-radius: 0.9rem;
+  padding: 0.9rem 1rem;
+  color: #47534c;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+button:hover,
+button.active {
+  border-color: #4c7a64;
+  background: #f1f5e8;
+}
+
+strong {
+  color: #244f3d;
+  font-size: 1.35rem;
+}
+
+span {
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+@media (max-width: 48rem) {
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

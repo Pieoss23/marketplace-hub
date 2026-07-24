@@ -115,3 +115,16 @@ La verifica tecnica locale è stata completata con esito positivo:
 Restano da eseguire le interviste e i test osservati con almeno 5 partecipanti.
 Di conseguenza non è ancora possibile applicare i criteri quantitativi di
 decisione né autorizzare un adattatore per un marketplace reale.
+
+Il materiale operativo per eseguire il prossimo passo è disponibile nel
+[`protocollo di validazione`](./extension-study-protocol.md), con una
+[`scheda sessione`](./extension-study-session.md) duplicabile per ciascun
+partecipante.
+
+## Decisione del 24 luglio 2026
+
+Le interviste e i test osservati sono differiti. La verifica tecnica dell'MVP
+resta valida, ma le metriche di prodotto non sono state raccolte: non è quindi
+possibile considerare validata l'ipotesi né procedere con adattatori per
+marketplace reali. Nel frattempo il lavoro continua sull'hardening tecnico
+della V1.
