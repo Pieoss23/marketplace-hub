@@ -60,6 +60,7 @@ export interface PublishAnnouncementResponse {
   readonly connectorCode: string;
   readonly externalListingId?: string;
   readonly externalUrl?: string;
+  readonly lastError?: string;
   readonly publishedAt?: string;
 }
 

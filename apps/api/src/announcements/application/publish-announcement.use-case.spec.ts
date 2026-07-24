@@ -205,6 +205,46 @@ describe('PublishAnnouncementUseCase', () => {
     expect(repository.updateStatus).toHaveBeenCalledWith('a1', 'READY');
   });
 
+  it('retries after a FAILED attempt: not blocked, creates a new publication row', async () => {
+    const repository = buildRepository();
+    repository.findById.mockResolvedValue(announcement);
+    repository.findChannel.mockResolvedValue(enabledChannel);
+    repository.findLatestPublication.mockResolvedValue(
+      readyPublication({
+        id: 'publication-1',
+        status: 'FAILED',
+        lastError: 'marketplace unavailable',
+      }),
+    );
+    repository.createPublication.mockResolvedValue(readyPublication({ id: 'publication-2' }));
+    repository.updatePublication.mockImplementation((_id, data) =>
+      Promise.resolve(
+        readyPublication({
+          id: 'publication-2',
+          status: data.status,
+          externalListingId: data.externalListingId ?? null,
+          externalUrl: data.externalUrl ?? null,
+          lastError: data.lastError ?? null,
+          publishedAt: data.publishedAt ?? null,
+        }),
+      ),
+    );
+    repository.findChannels.mockResolvedValue([enabledChannel]);
+    repository.findLatestPublicationsByChannel.mockResolvedValue([
+      readyPublication({ id: 'publication-2', status: 'PUBLISHED' }),
+    ]);
+
+    const useCase = buildUseCase(repository);
+    const result = await useCase.execute('a1', 'mock');
+
+    expect(repository.createPublication).toHaveBeenCalledWith(
+      expect.objectContaining({ announcementId: 'a1', connectorCode: 'mock', status: 'READY' }),
+    );
+    expect(result.publication.id).toBe('publication-2');
+    expect(result.publication.status).toBe('PUBLISHED');
+    expect(repository.updateStatus).toHaveBeenCalledWith('a1', 'PUBLISHED');
+  });
+
   it('throws 404 when the connector does not exist', async () => {
     const repository = buildRepository();
     repository.findById.mockResolvedValue(announcement);

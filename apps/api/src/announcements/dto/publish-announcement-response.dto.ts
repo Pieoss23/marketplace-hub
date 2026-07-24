@@ -20,5 +20,8 @@ export class PublishAnnouncementResponseDto {
   externalUrl?: string;
 
   @ApiProperty({ required: false })
+  lastError?: string;
+
+  @ApiProperty({ required: false })
   publishedAt?: string;
 }

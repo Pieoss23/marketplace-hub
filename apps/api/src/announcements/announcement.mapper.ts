@@ -70,6 +70,7 @@ export function toPublishAnnouncementResponseDto(
     connectorCode: publication.connectorCode,
     ...(publication.externalListingId && { externalListingId: publication.externalListingId }),
     ...(publication.externalUrl && { externalUrl: publication.externalUrl }),
+    ...(publication.lastError && { lastError: publication.lastError }),
     ...(publication.publishedAt && { publishedAt: publication.publishedAt.toISOString() }),
   };
 }
