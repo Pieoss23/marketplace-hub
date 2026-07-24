@@ -32,7 +32,11 @@ describe('ShellComponent', () => {
   it('shows the current user and logs out on click', () => {
     localStorage.setItem(
       'marketplace-hub.auth',
-      JSON.stringify({ accessToken: 'token', user: { id: 'user-1', email: 'me@example.com' } }),
+      JSON.stringify({
+        accessToken: 'token',
+        refreshToken: 'refresh-token',
+        user: { id: 'user-1', email: 'me@example.com' },
+      }),
     );
     fixture = TestBed.createComponent(ShellComponent);
     fixture.detectChanges();

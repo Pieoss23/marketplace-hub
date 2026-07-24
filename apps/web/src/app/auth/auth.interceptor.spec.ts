@@ -37,7 +37,11 @@ describe('authInterceptor', () => {
   it('attaches the bearer token when authenticated', () => {
     localStorage.setItem(
       'marketplace-hub.auth',
-      JSON.stringify({ accessToken: 'token-abc', user: { id: 'user-1', email: 'a@example.com' } }),
+      JSON.stringify({
+        accessToken: 'token-abc',
+        refreshToken: 'refresh-token-abc',
+        user: { id: 'user-1', email: 'a@example.com' },
+      }),
     );
     TestBed.inject(AuthService);
 

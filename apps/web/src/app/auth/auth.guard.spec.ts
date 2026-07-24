@@ -19,7 +19,11 @@ describe('authGuard', () => {
   it('allows navigation when authenticated', () => {
     localStorage.setItem(
       'marketplace-hub.auth',
-      JSON.stringify({ accessToken: 'token', user: { id: 'user-1', email: 'test@example.com' } }),
+      JSON.stringify({
+        accessToken: 'token',
+        refreshToken: 'refresh-token',
+        user: { id: 'user-1', email: 'test@example.com' },
+      }),
     );
     TestBed.inject(AuthService);
 

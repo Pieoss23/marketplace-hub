@@ -13,6 +13,9 @@ export class AuthResponseDto implements AuthResponse {
   @ApiProperty()
   accessToken!: string;
 
+  @ApiProperty()
+  refreshToken!: string;
+
   @ApiProperty({ type: PublicUserDto })
   user!: PublicUserDto;
 }

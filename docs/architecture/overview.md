@@ -29,20 +29,31 @@ Marketplace Hub adotta un monorepo pnpm semplice, senza orchestratori aggiuntivi
 
 ## Autenticazione
 
-`apps/api/src/auth` espone `POST /api/auth/signup`, `POST /api/auth/login` e
-`GET /api/auth/me` (JWT firmato con `@nestjs/jwt`, password con `scrypt` di
-`node:crypto`). `apps/web` mostra `/login` e `/signup` (`ShellComponent` come
-root, `AppComponent` raggiungibile solo se autenticato tramite `authGuard`) e
-allega il token con un interceptor HTTP.
+`apps/api/src/auth` espone `POST /api/auth/signup`, `POST /api/auth/login`,
+`GET /api/auth/me`, `POST /api/auth/refresh` e `POST /api/auth/logout` (JWT
+firmato con `@nestjs/jwt`, password con `scrypt` di `node:crypto`). L'access
+token è intenzionalmente di breve durata (15 minuti di default); un
+`RefreshToken` opaco e a lunga durata (30 giorni, hash SHA-256 persistito in
+Prisma) permette il rinnovo silenzioso e la revoca reale lato server, assente
+nella prima versione dell'autenticazione. Ogni refresh ruota il token
+(quello presentato viene revocato, uno nuovo emesso); il riuso di un token
+già revocato è trattato come segnale di compromissione e revoca tutte le
+sessioni attive dell'utente. `apps/web` mostra `/login` e `/signup`
+(`ShellComponent` come root, `AppComponent` raggiungibile solo se
+autenticato tramite `authGuard`), allega l'access token con un interceptor
+HTTP e ne tenta il rinnovo silenzioso su una risposta 401 tramite un secondo
+interceptor dedicato prima di forzare il logout.
 
 Tutti gli endpoint su `/api/announcements` (incluse le letture: elenco,
 dettaglio, storico pubblicazioni) richiedono autenticazione (`JwtAuthGuard` a
 livello di controller). `apps/extension` gestisce il proprio login/sessione
 (vedi `docs/architecture/extension-web-integration.md`) e allega il token
-alle richieste; alla scadenza o revoca del token l'estensione richiede un
+alle richieste; su un `401` tenta una sola rotazione del refresh token e
+ripete la lettura. Se il rinnovo fallisce, cancella la sessione e richiede un
 nuovo accesso invece di fallire silenziosamente. Non c'è isolamento dei dati
 per utente: tutti gli utenti autenticati condividono lo stesso spazio di
-annunci, coerente con "un singolo annuncio centrale" (`docs/project-plan/v1-scope.md`).
+annunci, coerente con "un singolo annuncio centrale"
+(`docs/project-plan/v1-scope.md`).
 
 ## Evoluzione a connettori
 

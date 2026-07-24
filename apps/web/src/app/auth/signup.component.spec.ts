@@ -54,7 +54,11 @@ describe('SignupComponent', () => {
 
     const request = httpTesting.expectOne('/api/auth/signup');
     expect(request.request.body).toEqual({ email: 'test@example.com', password: 'password1234' });
-    request.flush({ accessToken: 'token', user: { id: 'user-1', email: 'test@example.com' } });
+    request.flush({
+      accessToken: 'token',
+      refreshToken: 'refresh-token',
+      user: { id: 'user-1', email: 'test@example.com' },
+    });
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/');
   });

@@ -2,7 +2,9 @@ export type { HealthResponse } from './health-response.js';
 export type {
   AuthResponse,
   LoginRequest,
+  LogoutRequest,
   PublicUserResponse,
+  RefreshRequest,
   SignupRequest,
 } from './auth.js';
 export type {

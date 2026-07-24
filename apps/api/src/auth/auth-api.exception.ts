@@ -34,4 +34,19 @@ export class AuthApiException extends HttpException {
       message: 'Invalid or expired session.',
     });
   }
+
+  static invalidRefreshToken(): AuthApiException {
+    return new AuthApiException(HttpStatus.UNAUTHORIZED, {
+      code: 'INVALID_REFRESH_TOKEN',
+      message: 'Invalid or expired refresh token.',
+    });
+  }
+
+  static refreshTokenReused(): AuthApiException {
+    return new AuthApiException(HttpStatus.UNAUTHORIZED, {
+      code: 'REFRESH_TOKEN_REUSED',
+      message:
+        'This refresh token was already used. All sessions for this account have been revoked; please log in again.',
+    });
+  }
 }

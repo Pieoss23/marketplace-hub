@@ -12,12 +12,29 @@ datasource db {
 /// app rather than partitioning data per account. Authentication issues a
 /// JWT carrying `sub = User.id`.
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  passwordSalt String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  passwordSalt  String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  refreshTokens RefreshToken[]
+}
+
+/// Server-side refresh token record enabling real revocation (rotation +
+/// reuse detection), unlike the stateless access JWT. Stores only a
+/// SHA-256 hash of the opaque random token (see `refresh-token.util.ts`) —
+/// never the raw value.
+model RefreshToken {
+  id        String    @id @default(uuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 /// Central listing, mirroring the pure domain type `Listing` in
