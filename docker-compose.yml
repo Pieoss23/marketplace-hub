@@ -1,3 +1,7 @@
+# Shared connection string for the app services (postgres reachable as the
+# `postgres` service on the compose network). `x-` keys are ignored by Compose.
+x-database-url: &database_url postgresql://${POSTGRES_USER:-marketplace_hub}:${POSTGRES_PASSWORD:-marketplace_hub}@postgres:5432/${POSTGRES_DB:-marketplace_hub}?schema=public
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -16,13 +20,29 @@ services:
       timeout: 5s
       retries: 10
 
+  # One-shot: applies pending Prisma migrations, then exits. Built from the
+  # Dockerfile's `build` stage because it carries the prisma CLI + schema +
+  # migrations (the lean runtime `api` image deliberately prunes the CLI).
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: build
+    environment:
+      DATABASE_URL: *database_url
+    command: pnpm --filter @marketplace-hub/api exec prisma migrate deploy
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-marketplace_hub}:${POSTGRES_PASSWORD:-marketplace_hub}@postgres:5432/${POSTGRES_DB:-marketplace_hub}?schema=public
+      DATABASE_URL: *database_url
       JWT_SECRET: ${JWT_SECRET:-dev-insecure-secret-change-me}
       JWT_EXPIRES_IN_SECONDS: ${JWT_EXPIRES_IN_SECONDS:-900}
       REFRESH_TOKEN_EXPIRES_IN_SECONDS: ${REFRESH_TOKEN_EXPIRES_IN_SECONDS:-2592000}
@@ -34,6 +54,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   postgres_data:
