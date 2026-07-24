@@ -34,4 +34,11 @@ describe('Health (e2e)', () => {
     expect(response.headers['x-frame-options']).toBe('SAMEORIGIN');
     expect(response.headers['content-security-policy']).toBeUndefined();
   });
+
+  it('GET /api/health/ready reports ready with a reachable database', async () => {
+    const response = await request(app.getHttpServer()).get('/api/health/ready').expect(200);
+
+    expect(response.body).toMatchObject({ status: 'ready', database: 'up' });
+    expect(typeof response.body.timestamp).toBe('string');
+  });
 });

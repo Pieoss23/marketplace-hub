@@ -1,4 +1,4 @@
-export type { HealthResponse } from './health-response.js';
+export type { HealthResponse, ReadinessResponse } from './health-response.js';
 export type {
   AuthResponse,
   LoginRequest,
