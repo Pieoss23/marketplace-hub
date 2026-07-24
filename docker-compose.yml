@@ -16,5 +16,24 @@ services:
       timeout: 5s
       retries: 10
 
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-marketplace_hub}:${POSTGRES_PASSWORD:-marketplace_hub}@postgres:5432/${POSTGRES_DB:-marketplace_hub}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-dev-insecure-secret-change-me}
+      JWT_EXPIRES_IN_SECONDS: ${JWT_EXPIRES_IN_SECONDS:-900}
+      REFRESH_TOKEN_EXPIRES_IN_SECONDS: ${REFRESH_TOKEN_EXPIRES_IN_SECONDS:-2592000}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:4200}
+      API_PORT: "3000"
+      API_GLOBAL_PREFIX: api
+    ports:
+      - "${API_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:

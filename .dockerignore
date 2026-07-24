@@ -1,0 +1,39 @@
+# Build context is the repo root (see apps/api/Dockerfile). Keep it small and
+# never ship secrets or derived artifacts into the image.
+
+# Dependencies and build outputs (reinstalled/rebuilt inside the image)
+**/node_modules
+**/dist
+**/.angular
+**/coverage
+**/*.tsbuildinfo
+
+# Secrets and local env — NEVER copy into the build context
+.env
+.env.*
+!.env.example
+
+# Not part of the API image (their package.json is still needed for pnpm
+# workspace resolution, so exclude only the heavy source/config, not manifests)
+apps/web/src
+apps/web/public
+apps/web/proxy.conf.json
+apps/web/angular.json
+apps/web/*.config.js
+apps/extension/src
+apps/extension/test
+
+# VCS, tooling, docs, agent coordination
+.git
+.gitignore
+.github
+.claude
+.agents
+docs
+**/*.md
+!apps/api/**/*.md
+
+# Editor / OS noise
+.vscode
+.idea
+**/.DS_Store
