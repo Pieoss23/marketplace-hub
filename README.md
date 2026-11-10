@@ -1,13 +1,84 @@
 # Marketplace Hub
 
-Monorepo pnpm per Marketplace Hub.
+Un annuncio, scritto una volta, pubblicato su più marketplace attraverso
+connettori intercambiabili. Il dominio non sa nulla dei marketplace, i
+connettori non sanno nulla della persistenza, e ogni tentativo di
+pubblicazione ha uno stato proprio e tracciabile.
 
-> **Nota**: il modello centrale canonico è `Announcement` (vedi
-> `docs/architecture/overview.md`). Il modello `Listing`/`Publication`
-> descritto più sotto (endpoint `/api/listings`) è la prima iterazione V1,
-> resta nel codice ma è superato: sia il frontend (`apps/web`) sia lo sviluppo
-> attivo usano `/api/announcements` (dettagli in
-> `docs/api/announcement-publication-api.md`).
+Monorepo pnpm con API NestJS, frontend Angular, estensione browser e
+PostgreSQL via Prisma.
+
+> **Stato:** progetto personale in sviluppo. Le fondamenta — dominio,
+> contratti, persistenza, autenticazione, connettore mock — sono
+> implementate e coperte da test; i connettori verso marketplace reali no.
+> La sezione [Note sul modello dati](#note-sul-modello-dati) spiega cosa è
+> canonico e cosa è prima iterazione.
+
+## Cosa dimostra questo progetto
+
+Se stai valutando il codice, questi sono i punti su cui vale la pena
+guardare:
+
+- **Architettura a dipendenze dichiarate.** `docs/architecture/dependency-rules.md`
+  fissa cosa può importare cosa: il package `domain` non conosce NestJS,
+  Angular, Prisma né alcun SDK esterno; i payload dei marketplace non
+  entrano mai nel modello centrale; non sono ammessi cicli fra package.
+- **SDK per connettori.** `packages/connector-sdk` definisce il contratto
+  che un marketplace deve rispettare. Aggiungere un canale significa
+  scrivere un adattatore, non toccare il dominio.
+- **Stato di pubblicazione separato dall'annuncio.** Un annuncio pubblicato
+  su tre canali ha tre esiti indipendenti, ognuno con il proprio stato e
+  storico (`docs/decisions/adr-003-publication-state-model.md`).
+- **Decisioni documentate.** Tre ADR spiegano perché il dominio e il
+  contratto connettore sono fatti così, come viene persistita la
+  pubblicazione e come è modellato il suo stato.
+- **Prezzi in unità minori.** Importi salvati come interi
+  (`priceAmountMinor` + `priceCurrency`), per non affidare il denaro alla
+  virgola mobile.
+- **Integrazione continua.** La pipeline esegue build, lint, type-check,
+  migrazioni e test a ogni push.
+
+## Struttura
+
+```
+packages/
+  domain          modello di dominio puro, senza framework
+  contracts       tipi di trasporto condivisi
+  connector-sdk   contratto che ogni connettore marketplace implementa
+apps/
+  api             NestJS + Prisma + PostgreSQL
+  web             frontend Angular
+  extension       estensione browser
+docs/
+  architecture/   panoramica, regole di dipendenza, ADR
+  api/            contratto degli endpoint
+  domain/         modello di dominio
+```
+
+## Documentazione
+
+- [Panoramica dell'architettura](docs/architecture/overview.md)
+- [Regole di dipendenza](docs/architecture/dependency-rules.md)
+- [ADR 001 — dominio centrale e contratto connettore](docs/architecture/adr-001-core-domain-and-connector-contract.md)
+- [ADR 002 — persistenza della pubblicazione](docs/architecture/adr-002-publication-persistence.md)
+- [ADR 003 — modello di stato della pubblicazione](docs/decisions/adr-003-publication-state-model.md)
+- [API annunci e pubblicazione](docs/api/announcement-publication-api.md)
+- [Connettore mock](docs/architecture/mock-connector.md)
+
+## Note sul modello dati
+
+Il modello centrale canonico è `Announcement`. Il modello
+`Listing`/`Publication` (endpoint `/api/listings`) è la prima iterazione:
+resta nel codice ma è superato, e sia il frontend sia lo sviluppo attivo
+usano `/api/announcements`. Dettagli in
+[docs/architecture/overview.md](docs/architecture/overview.md) e
+[docs/api/announcement-publication-api.md](docs/api/announcement-publication-api.md).
+
+## Licenza
+
+MIT — vedi [LICENSE](LICENSE).
+
+---
 
 ## Prerequisiti
 
