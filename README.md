@@ -1,5 +1,8 @@
 # Marketplace Hub
 
+[![CI](https://github.com/Pieoss23/marketplace-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/Pieoss23/marketplace-hub/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Un annuncio, scritto una volta, pubblicato su più marketplace attraverso
 connettori intercambiabili. Il dominio non sa nulla dei marketplace, i
 connettori non sanno nulla della persistenza, e ogni tentativo di
